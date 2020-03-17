@@ -24,9 +24,9 @@ typedef struct Token{
   int line_num; // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
 }Token;
 
-// for easy free'ing
+// for easy freeing
 typedef struct {
-  Token head;
+  Token head;  // should be a Null token
   Token *tail;
 }TokenList;
 
