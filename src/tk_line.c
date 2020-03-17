@@ -11,9 +11,10 @@ Token *pop_tk_line()
   if (curr == NULL)
 	return NULL;
   
-  while (curr->next != NULL && curr->next->tk != Newline)
+  while (curr->next != NULL && curr->next->tk != Newline) {
 	curr = curr->next;
-  if (curr->next != NULL){
+  }
+  if (curr->next != NULL) {
 	tk_lst.head.next = curr->next->next;
 	curr->next->next = NULL;
   }
