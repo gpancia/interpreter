@@ -13,7 +13,7 @@
 
 Expr_t parse_expr(Token **token_ptr)
 {
-  Expr_t ret;
+  Expr_t ret = NULL_EXPR;
   Token *token = *token_ptr;
   // start with a specific token if provided, otherwise pop line off tk_lst
   if (token == NULL) {
@@ -133,8 +133,9 @@ Expr_t parse_expr(Token **token_ptr)
       }
     }
   }
-  if (token != NULL)
+  if (token != NULL) {
     NXT_TK;
+  }
   *token_ptr = token;
   return ret;
 }
@@ -509,15 +510,17 @@ Expr_t parse_constant(Token **token_ptr)
     ret = wrap_flt(atof(token->val));
   }
   else if (token->tk == Bool) {
+    // Bools are to be treated the same as ints for almost everything
     if (seq(token->val, "false")) {
-      ret = wrap_bool((char) 0);
+      ret = wrap_int(0);
     }
     else {
-      ret = wrap_bool((char) 1);
+      ret = wrap_int(1);
     }
+    ret.r_type = Bool_R;
   }
   else {
-    PERR_FL("something went wrong with token type");
+    PERR_FL("something went wrong with token type (parse_constant)");
   }
   return ret;
 }
