@@ -17,7 +17,9 @@ enum expr_type {Add = 0, Sub = 1, Mul = 2, Div = 3,
 				Constant};
 
 enum result_type {Int_R = 0, Float_R = 1, String_R = 2, Bool_R = 3, Undef_R = -1};
-enum bexpr_type {Eql, Nql, Geq, Leq, Grt, Lsr, Not, And, Or}; // Or must stay last, with no explicit numbering, or logic in parse_op_binary will break
+// `Or` must stay last, with no explicit numbering,
+// otherwise logic in `parse_op_binary` will break:
+enum bexpr_type {Eql, Nql, Geq, Leq, Grt, Lsr, Not, And, Or};
 
 typedef union Expr_u{
   struct Expr_t *expr; 
