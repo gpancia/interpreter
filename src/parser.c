@@ -113,7 +113,7 @@ Expr_t parse_expr(Token **token_ptr)
     }
     char *op = highest_op_tk->val;
     if (highest_op_tk == left || right == NULL){
-      if (seq(op,"+") || seq(op, "-") || seq(op, "!"))
+      if (seq(op, "-") || seq(op, "!"))
         ret = parse_op_unary(op, parse_expr(&(highest_op_tk->next)), highest_op_tk->line_num);
       else {
         *token_ptr = token;
@@ -432,8 +432,8 @@ Expr_t parse_parens(Token **token_ptr)
     curr->head = NULL_EXPR;
   }
   else {
+    if (token->tk == Newline) { NXT_TK; }
     curr->head = parse_expr(&token);
-    NXT_TK;
   }
   while (token != NULL){
     if (token->tk == CParens){
@@ -447,7 +447,6 @@ Expr_t parse_parens(Token **token_ptr)
       curr->tail = malloc(sizeof(Cons_t));
       curr = curr->tail;
       curr->head = parse_expr(&token);
-      NXT_TK;
     }
   }
   PERR_FL("missing ')'");
@@ -481,8 +480,8 @@ Expr_t parse_sequence(Token **token_ptr)
     curr->head = NULL_EXPR;
   }
   else {
+    if (token->tk == Newline) { NXT_TK; }
     curr->head = parse_expr(&token);
-    NXT_TK;
   }
   while (token != NULL){
     if (token->tk == Newline) {  // ignore newlines within code block
@@ -502,7 +501,6 @@ Expr_t parse_sequence(Token **token_ptr)
       curr->tail = malloc(sizeof(Cons_t));
       curr = curr->tail;
       curr->head = parse_expr(&token);
-      NXT_TK;
     }
   }
   PERR_FL("missing '}'");
