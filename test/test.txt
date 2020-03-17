@@ -1,0 +1,11 @@
+example_int == 5
+example_str = "lexer puts everything inside quotation marks in same token,
+respecting \"escape characters\" like \\, #ignores comments,
+and including any \\n's inside the string."
+{
+	heck=!false
+    code > 5-3
+	blocks
+	and
+	stuff
+	}
