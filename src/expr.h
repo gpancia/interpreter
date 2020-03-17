@@ -116,6 +116,8 @@ typedef struct Constant_t{
 
 int is_null_expr(Expr_t);
 
+void print_expr(Expr_t);
+
 Expr_t wrap_int(int);
 Expr_t wrap_flt(double);
 Expr_t wrap_str(char*);
