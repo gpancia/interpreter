@@ -276,20 +276,28 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
       *(ret.expr.arith) = (Arith_t){Div, Undef_R, left, right};
     }
   }
-  else if (seq(op, "=")){
-    if (left.e_type != Id){
-      fprintf(stderr, "%s:%d: error: cannot use expression of type %d as variable name\n", file_name, line_number, left.e_type);
-      exit(1);
-    }
-    // check if id is function dec (has parens)
-  }
+  // Shouldn't ever happen
+  /* else if (seq(op, "=")){ */
+  /*   if (left.e_type != Id){ */
+  /*     fprintf(stderr, "%s:%d: error: cannot use expression of type %d as variable name\n", file_name, line_number, left.e_type); */
+  /*     exit(1); */
+  /*   } */
+  /*   // check if id is function dec (has parens) */
+  /* } */
   else {
+    char found = 0;
     char *bops[Or+1] = {"==","!=",">=","<=",">","<","!","&&","||"};
-    for (int i = 0; i <= Or; i++){
+    for (int i = 0; i <= Or && !found; i++){
       if (seq(op, bops[i])){
         ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
         *(ret.expr.bexpr) = (BExpr_t){BExpr, i, left, right};
+        found = 1;
+        break;
       }
+    }
+    if (!found) {
+      fprintf(stderr, "%s:%d: error: unidentified operator '%s'\n",
+              file_name, line_number, op);
     }
   }
   return ret;
