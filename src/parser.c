@@ -404,7 +404,6 @@ Expr_t parse_cond(Token **token_ptr)
   return ret;
 }
 
-// TODO: Fix bad logic lose info
 Expr_t parse_parens(Token **token_ptr)
 {
   Token *token = *token_ptr;
@@ -418,31 +417,41 @@ Expr_t parse_parens(Token **token_ptr)
     PERR_FL("trailing '('");
   }
   NXT_TK;
-  if (token->tk == CParens)
-    return NULL_EXPR;
 
   Expr_u lst;
   lst.cons = malloc(sizeof(Cons_t));
   lst.cons->e_type = List;
   Expr_t lst_expr = {List, Undef_R, lst};
-  while (token != NULL){
-    lst.cons->head = parse_expr(&token);
+  Cons_t *curr = lst.cons;
+  
+  // Since every time a new element is found new memory is malloc'd, to avoid
+  // having an empty head at the beginning of the list, this if/else statement
+  // is necessary before the while loop
+  if (token->tk == CParens) {
+    curr->head = NULL_EXPR;
+  }
+  else {
+    curr->head = parse_expr(&token);
     NXT_TK;
+  }
+  while (token != NULL){
     if (token->tk == CParens){
+      curr->tail = NULL;
+      lst_expr.r_type = curr->head.r_type;
       NXT_TK;
-      lst_expr.r_type = lst.cons->head.r_type;
       *token_ptr = token;
       return lst_expr;
     }
     else {
-      lst.cons->tail = malloc(sizeof(Cons_t));
-      lst.cons = lst.cons->tail;
+      curr->tail = malloc(sizeof(Cons_t));
+      curr = curr->tail;
+      curr->head = parse_expr(&token);
+      NXT_TK;
     }
   }
   PERR_FL("missing ')'");
 }
 
-// TODO: Fix bad logic lose info
 Expr_t parse_sequence(Token **token_ptr)
 {
   Token *token = *token_ptr;
@@ -456,23 +465,32 @@ Expr_t parse_sequence(Token **token_ptr)
     PERR_FL("trailing '{'");
   }
   NXT_TK;
-  
-  if (token->tk == CBrace) {
-    return NULL_EXPR;
-  }
+
   
   Expr_u seq;
   seq.cons = malloc(sizeof(Cons_t));
   seq.cons->e_type = Sequence;
   Expr_t seq_expr = {Sequence, Undef_R, seq};
+  Cons_t *curr = seq.cons;
+  
+  // Since every time a new element is found new memory is malloc'd, to avoid
+  // having an empty head at the beginning of the sequence, this if/else statement
+  // is necessary before the while loop
+  if (token->tk == CBrace) {
+    curr->head = NULL_EXPR;
+  }
+  else {
+    curr->head = parse_expr(&token);
+    NXT_TK;
+  }
   while (token != NULL){
-    if (token->tk == Newline) {
+    if (token->tk == Newline) {  // ignore newlines within code block
       NXT_TK;
     }
     else if (token->tk == CBrace){
+      curr->tail = NULL;
+      seq_expr.r_type = curr->head.r_type;
       NXT_TK;
-      seq.cons->head = NULL_EXPR;
-      seq_expr.r_type = seq.cons->head.r_type;
       if (token->tk == Newline) {
         NXT_TK;
       }
@@ -480,9 +498,10 @@ Expr_t parse_sequence(Token **token_ptr)
       return seq_expr;
     }
     else {
-      seq.cons->head = parse_expr(&token);
-      seq.cons->tail = malloc(sizeof(Cons_t));
-      seq.cons = seq.cons->tail;
+      curr->tail = malloc(sizeof(Cons_t));
+      curr = curr->tail;
+      curr->head = parse_expr(&token);
+      NXT_TK;
     }
   }
   PERR_FL("missing '}'");
