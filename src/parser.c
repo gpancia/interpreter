@@ -13,7 +13,7 @@
 
 Expr_t parse_expr(Token **token_ptr)
 {
-  Expr_t ret;
+  Expr_t ret = NULL_EXPR;
   Token *token = *token_ptr;
   // start with a specific token if provided, otherwise pop line off tk_lst
   if (token == NULL) {
@@ -113,7 +113,7 @@ Expr_t parse_expr(Token **token_ptr)
     }
     char *op = highest_op_tk->val;
     if (highest_op_tk == left || right == NULL){
-      if (seq(op,"+") || seq(op, "-") || seq(op, "!"))
+      if (seq(op, "-") || seq(op, "!"))
         ret = parse_op_unary(op, parse_expr(&(highest_op_tk->next)), highest_op_tk->line_num);
       else {
         *token_ptr = token;
@@ -133,8 +133,9 @@ Expr_t parse_expr(Token **token_ptr)
       }
     }
   }
-  if (token != NULL)
+  if (token != NULL) {
     NXT_TK;
+  }
   *token_ptr = token;
   return ret;
 }
@@ -276,20 +277,28 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
       *(ret.expr.arith) = (Arith_t){Div, Undef_R, left, right};
     }
   }
-  else if (seq(op, "=")){
-    if (left.e_type != Id){
-      fprintf(stderr, "%s:%d: error: cannot use expression of type %d as variable name\n", file_name, line_number, left.e_type);
-      exit(1);
-    }
-    // check if id is function dec (has parens)
-  }
+  // Shouldn't ever happen
+  /* else if (seq(op, "=")){ */
+  /*   if (left.e_type != Id){ */
+  /*     fprintf(stderr, "%s:%d: error: cannot use expression of type %d as variable name\n", file_name, line_number, left.e_type); */
+  /*     exit(1); */
+  /*   } */
+  /*   // check if id is function dec (has parens) */
+  /* } */
   else {
+    char found = 0;
     char *bops[Or+1] = {"==","!=",">=","<=",">","<","!","&&","||"};
-    for (int i = 0; i <= Or; i++){
+    for (int i = 0; i <= Or && !found; i++){
       if (seq(op, bops[i])){
         ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
         *(ret.expr.bexpr) = (BExpr_t){BExpr, i, left, right};
+        found = 1;
+        break;
       }
+    }
+    if (!found) {
+      fprintf(stderr, "%s:%d: error: unidentified operator '%s'\n",
+              file_name, line_number, op);
     }
   }
   return ret;
@@ -396,7 +405,6 @@ Expr_t parse_cond(Token **token_ptr)
   return ret;
 }
 
-// TODO: Fix bad logic lose info
 Expr_t parse_parens(Token **token_ptr)
 {
   Token *token = *token_ptr;
@@ -410,31 +418,40 @@ Expr_t parse_parens(Token **token_ptr)
     PERR_FL("trailing '('");
   }
   NXT_TK;
-  if (token->tk == CParens)
-    return NULL_EXPR;
 
   Expr_u lst;
   lst.cons = malloc(sizeof(Cons_t));
   lst.cons->e_type = List;
   Expr_t lst_expr = {List, Undef_R, lst};
+  Cons_t *curr = lst.cons;
+  
+  // Since every time a new element is found new memory is malloc'd, to avoid
+  // having an empty head at the beginning of the list, this if/else statement
+  // is necessary before the while loop
+  if (token->tk == CParens) {
+    curr->head = NULL_EXPR;
+  }
+  else {
+    if (token->tk == Newline) { NXT_TK; }
+    curr->head = parse_expr(&token);
+  }
   while (token != NULL){
-    lst.cons->head = parse_expr(&token);
-    NXT_TK;
     if (token->tk == CParens){
+      curr->tail = NULL;
+      lst_expr.r_type = curr->head.r_type;
       NXT_TK;
-      lst_expr.r_type = lst.cons->head.r_type;
       *token_ptr = token;
       return lst_expr;
     }
     else {
-      lst.cons->tail = malloc(sizeof(Cons_t));
-      lst.cons = lst.cons->tail;
+      curr->tail = malloc(sizeof(Cons_t));
+      curr = curr->tail;
+      curr->head = parse_expr(&token);
     }
   }
   PERR_FL("missing ')'");
 }
 
-// TODO: Fix bad logic lose info
 Expr_t parse_sequence(Token **token_ptr)
 {
   Token *token = *token_ptr;
@@ -448,23 +465,32 @@ Expr_t parse_sequence(Token **token_ptr)
     PERR_FL("trailing '{'");
   }
   NXT_TK;
-  
-  if (token->tk == CBrace) {
-    return NULL_EXPR;
-  }
+
   
   Expr_u seq;
   seq.cons = malloc(sizeof(Cons_t));
   seq.cons->e_type = Sequence;
   Expr_t seq_expr = {Sequence, Undef_R, seq};
+  Cons_t *curr = seq.cons;
+  
+  // Since every time a new element is found new memory is malloc'd, to avoid
+  // having an empty head at the beginning of the sequence, this if/else statement
+  // is necessary before the while loop
+  if (token->tk == CBrace) {
+    curr->head = NULL_EXPR;
+  }
+  else {
+    if (token->tk == Newline) { NXT_TK; }
+    curr->head = parse_expr(&token);
+  }
   while (token != NULL){
-    if (token->tk == Newline) {
+    if (token->tk == Newline) {  // ignore newlines within code block
       NXT_TK;
     }
     else if (token->tk == CBrace){
+      curr->tail = NULL;
+      seq_expr.r_type = curr->head.r_type;
       NXT_TK;
-      seq.cons->head = NULL_EXPR;
-      seq_expr.r_type = seq.cons->head.r_type;
       if (token->tk == Newline) {
         NXT_TK;
       }
@@ -472,9 +498,9 @@ Expr_t parse_sequence(Token **token_ptr)
       return seq_expr;
     }
     else {
-      seq.cons->head = parse_expr(&token);
-      seq.cons->tail = malloc(sizeof(Cons_t));
-      seq.cons = seq.cons->tail;
+      curr->tail = malloc(sizeof(Cons_t));
+      curr = curr->tail;
+      curr->head = parse_expr(&token);
     }
   }
   PERR_FL("missing '}'");
@@ -501,15 +527,17 @@ Expr_t parse_constant(Token **token_ptr)
     ret = wrap_flt(atof(token->val));
   }
   else if (token->tk == Bool) {
+    // Bools are to be treated the same as ints for almost everything
     if (seq(token->val, "false")) {
-      ret = wrap_bool((char) 0);
+      ret = wrap_int(0);
     }
     else {
-      ret = wrap_bool((char) 1);
+      ret = wrap_int(1);
     }
+    ret.r_type = Bool_R;
   }
   else {
-    PERR_FL("something went wrong with token type");
+    PERR_FL("something went wrong with token type (parse_constant)");
   }
   return ret;
 }

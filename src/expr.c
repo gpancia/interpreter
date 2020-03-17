@@ -11,31 +11,91 @@ int is_null_expr(Expr_t e)
 
 void print_expr(Expr_t expr)
 {
+  // setting enum name arrays for easy printing:
   char *e_str[] = {"Add", "Sub", "Mul", "Div", "Concat","Generic", "Set",
                    "BExpr", "Conditional", "List", "Sequence", "ArgList",
                    "Function", "FunctionDef", "Var", "Constant"};
   char *r_str[] = {"Undef_R", "Int_R", "Float_R", "String_R", "Bool_R"};
+  char *b_str[] = {"Eql", "Nql", "Geq", "Leq", "Grt", "Lsr", "Not", "And", "Or"};
+  
   printf("{%s, %s, ", e_str[expr.e_type], r_str[1 + expr.r_type]);
-
-  /* switch (expr.e_type) { */
-  /*   case Add: */
-  /*   case Sub: */
-  /*   case Mul: */
-  /*   case Div: */
-  /*   case Concat: */
-  /*   case Set: */
-  /*   case BExpr: */
-  /*   case Conditional: */
-  /*   case List: */
-  /*   case Sequence: */
-  /*   case ArgList: */
-  /*   case Function: */
-  /*   case FunctionDef: */
-  /*   case Var: */
-  /*   case Constant: */
-  /*   case Generic: */
-  /* } */
-
+  
+  switch (expr.e_type) {
+    case Add:
+    case Sub:
+    case Mul:
+    case Div:
+    case Concat:
+      print_expr(expr.expr.arith->left);
+      printf(", ");
+      print_expr(expr.expr.arith->right);
+      break;
+    case Set:
+      printf("%s, ", expr.expr.set->name);
+      print_expr(expr.expr.set->val);
+      break;
+    case BExpr:
+      printf("%s, ", b_str[expr.expr.bexpr->b_type]);
+      print_expr(expr.expr.bexpr->left);
+      printf(", ");
+      print_expr(expr.expr.bexpr->right);
+      break;
+    case Conditional:
+      printf("if: ");
+      print_expr(expr.expr.cond->p);
+      printf(", then: ");
+      print_expr(expr.expr.cond->if_true);
+      printf(", else: ");
+      print_expr(expr.expr.cond->if_false);
+      break;
+    case List:
+    case ArgList:
+    case Sequence: {
+      Cons_t *curr = expr.expr.cons;
+      if (is_null_expr(curr->head)) {
+        printf("EMPTY");
+        break;
+      }
+      while (curr != NULL) {
+        print_expr(curr->head);
+        if (curr->tail != NULL) {
+          printf(", ");
+          curr = curr->tail;
+        }
+        else {break;}
+      }
+      break;
+    }
+    case Var:
+      printf("%s", expr.expr.var->name);
+      break;
+    case Constant:
+      switch (expr.r_type) {
+        case Int_R:
+          printf("%ld", expr.expr.constant->i);
+          break;
+        case Float_R:
+          printf("%f", expr.expr.constant->f);
+          break;
+        case String_R:
+          printf("\"%s\"", expr.expr.constant->str);
+          break;
+        case Bool_R:
+          printf("%s", ((expr.expr.constant->i == 0) ? "False" : "True"));
+          break;
+        default:
+          printf("ERROR: UNDEF");
+          break;
+      }
+      break;
+    case Function:
+    case FunctionDef:
+      printf("TO BE IMPLEMENTED");
+      break;
+    case Generic:
+    default:
+      break;
+  }
   printf("}");
   fflush(stdout);
   return;
@@ -61,6 +121,8 @@ Expr_t wrap_str(char *str)
   strcpy(ret.expr.constant->str, str);
   return ret;
 }
+
+// Currently deprecated
 Expr_t wrap_bool(char b)
 {
   Expr_t ret = {Constant, Bool_R, {malloc(sizeof(Constant_t))}};
