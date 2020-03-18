@@ -3,8 +3,7 @@ A WIP custom programming language interpreter written using C. It will be a Turi
 
 ### Planned Features: (subject to change)
 + OCaml-style type inferrence
-+ Mixture of C-style and Python-style syntax
-+ Turing complete
++ Turing completeness
 + Eager evaluation
 
 ### Syntax (subject to change)
