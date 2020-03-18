@@ -40,3 +40,8 @@ foo (x y) =
 # calling functions:
 bar = foo(3 5) + foo (5 6)-3 # whitespace doesn't matter outside parens
 ```
+
+### Progress:
++ Lexing: Feature-complete
++ Parsing: Almost feature-complete
++ Evaluation: To-do
