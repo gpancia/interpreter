@@ -1,4 +1,4 @@
-# interpreter
+# Custom Interpreter
 A WIP custom programming language interpreter written using C. It will be a Turing-complete language.
 
 ### Planned Features: (subject to change)
