@@ -328,7 +328,7 @@ Expr_t parse_set_var(Token **token_ptr)
   }
   NXT_TK;
   Expr_t val = parse_expr(&token);
-  Set_t set = {Set, val.r_type, val, malloc(sizeof(char)*(1+strlen(name)))};
+  Set_t set = {Set, val.r_type, malloc(sizeof(char)*(1+strlen(name))), val};
   strcpy(set.name, name);
   Expr_t ret = {Set, set.r_type, {malloc(sizeof(Set_t))}};
   *(ret.expr.set) = set;

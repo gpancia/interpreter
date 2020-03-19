@@ -21,6 +21,13 @@ enum result_type {Int_R = 0, Float_R = 1, String_R = 2, Bool_R = 3, Undef_R = -1
 // otherwise logic in `parse_op_binary` will break:
 enum bexpr_type {Eql, Nql, Geq, Leq, Grt, Lsr, Not, And, Or};
 
+// enum name arrays for easy printing:
+char *e_str[] = {"Add", "Sub", "Mul", "Div", "Concat","Generic", "Set",
+                 "BExpr", "Conditional", "List", "Sequence", "ArgList",
+                 "Function", "FunctionDef", "Var", "Constant"};
+char *r_str[] = {"Undef_R", "Int_R", "Float_R", "String_R", "Bool_R"};
+char *b_str[] = {"Eql", "Nql", "Geq", "Leq", "Grt", "Lsr", "Not", "And", "Or"};
+
 typedef union Expr_u{
   struct Expr_t *expr; 
   struct Generic_t *generic; // Generic (should only be used for NULL_EXPR)
@@ -51,8 +58,8 @@ typedef struct Generic_t{
 typedef struct Set_t{
   enum expr_type e_type;
   enum result_type r_type;
-  Expr_t val;
   char *name;
+  Expr_t val;
 }Set_t;
 
 typedef struct BExpr_t{
