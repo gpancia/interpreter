@@ -11,8 +11,8 @@ A WIP custom programming language interpreter written using C. It will be a Turi
 + python-style lack of main() function
 + {}s denote code blocks (sequences of commands), last command's return value is return value for block
 ++ used for function defs and if statements
-+ ()s denote lists or bool expressions, depending on context
-++ used for predicates, regular lists and for passing/defining function arguments
++ ()s used for operation ordering and for function argument lists (for both declaring and calling) 
++ []s used for declaring/accessing lists (0-indexed)
 
 #### Example:
 ```
@@ -39,6 +39,10 @@ foo (x y) =
 }
 # calling functions:
 bar = foo(3 5) + foo (5 6)-3 # whitespace doesn't matter outside parens
+
+# lists:
+list = ["a","b","c"]
+print list[2] # prints out "c"
 ```
 
 ### Progress:
