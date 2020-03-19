@@ -22,25 +22,38 @@ Expr_t parse_expr(Token **token_ptr)
     
   // find top-most operator in AST and its operand(s). If none, parse expression normally
   Token *left = token, *highest_op_tk, *right;
-  enum token_type tk;
   enum ordering {divmul, addsub, bexpr, set, null=-1}; // ordering is lowest to highest in AST, e.g.: + is higher than *
   enum ordering highest_op = null;
   while (token != NULL){
-    tk = token->tk;
-    if (tk < 5 || tk == Id) { // skip constants and binds for now
+    if (token->tk < 5 || token->tk == Id) { // skip constants and binds for now
       NXT_TK;
     }
-    else if (tk == Cond){ // skip ifs for now
+    else if (token->tk == Cond){ // skip ifs for now
       if (token->next == NULL){
         token->next = pop_tk_line();
       }
       NXT_TK;
       // skip_nest checks for anything wrong with the layout of the if statement
       skip_nest(&token, OParens, CParens); // skip over predicate
-      skip_nest(&token, OBrace, CBrace); // skip over if_true
-      skip_nest(&token, OBrace, CBrace); // skip over if_false
+      // skip over if_true and if_false
+      for (int i = 0; i < 2; i++) {
+        // 
+        if (token->tk != OBrace) {
+          if (token->tk == Newline) {
+            NXT_TK;
+            if (token == NULL) {
+              token = pop_tk_line();
+            }
+          }
+          else {
+            fprintf(stderr, "Unexpected token %s\n", t_str[token->tk]);
+            PERR_FL("Bad if-statement format");
+          }
+        }
+        skip_nest(&token, OBrace, CBrace);
+      }
     }
-    else if (tk == Oper){
+    else if (token->tk == Oper){
       char *val = token->val;
       enum ordering op;
       if (seq(val, "+") || seq(val, "-"))
@@ -58,50 +71,49 @@ Expr_t parse_expr(Token **token_ptr)
       }
       NXT_TK;
     }
-    else if (tk == OBrace) {
+    else if (token->tk == OBrace) {
       skip_nest(&token, OBrace, CBrace);
     }
-    else if (tk == OParens) {
+    else if (token->tk == OParens) {
       skip_nest(&token, OParens, CParens);
     }
-    else if (tk == CParens || tk == CBrace) {
+    else if (token->tk == CParens || token->tk == CBrace) {
       PERR_FL("mismatched closing brace or paren");
     }
-    else if (tk == Comma){
+    else if (token->tk == Comma){
       PERR_FL("unexpected comma");
     }
-    else if (tk == Newline){
+    else if (token->tk == Newline){
       break;
     }
     else {
       char err[1000];
-      sprintf(err, "unexpected token_type %d, debug this pls", tk);
+      sprintf(err, "unexpected token_type %d, debug this pls", token->tk);
       PERR_FL(err);
     }
   }
   if (highest_op < 0){
-    tk = left->tk;
-    if (tk == Newline) {
+    if (left->tk == Newline) {
       ret = NULL_EXPR;
     }
-    else if (tk < 5) {
+    else if (left->tk < 5) {
       ret = parse_constant(&left);
     }
-    else if (tk == Cond) {
+    else if (left->tk == Cond) {
       ret = parse_cond(&left);
     }
-    else if (tk == Id) {
+    else if (left->tk == Id) {
       ret = parse_id(&left);
     }
-    else if (tk == OParens) {
+    else if (left->tk == OParens) {
       ret = parse_parens(&left);
     }
-    else if (tk == OBrace) {
+    else if (left->tk == OBrace) {
       ret = parse_sequence(&left);
     }
     else {
       char err[100];
-      sprintf(err, "debug this, unexpected token %d", tk); // shouldn't happen
+      sprintf(err, "debug this, unexpected token %d", left->tk); // shouldn't happen
       *token_ptr = token;
       PERR_FL(err);
     }
@@ -561,7 +573,7 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
     }
     else if (tk == close){
       if (--nested == 0){
-        if (token->next != NULL) {
+        if (token->next && token->next->tk != Newline) {
           push_tk_line(token->next);
         }
         NXT_TK;
