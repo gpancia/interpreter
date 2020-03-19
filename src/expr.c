@@ -11,13 +11,6 @@ int is_null_expr(Expr_t e)
 
 void print_expr(Expr_t expr)
 {
-  // setting enum name arrays for easy printing:
-  char *e_str[] = {"Add", "Sub", "Mul", "Div", "Concat","Generic", "Set",
-                   "BExpr", "Conditional", "List", "Sequence", "ArgList",
-                   "Function", "FunctionDef", "Var", "Constant"};
-  char *r_str[] = {"Undef_R", "Int_R", "Float_R", "String_R", "Bool_R"};
-  char *b_str[] = {"Eql", "Nql", "Geq", "Leq", "Grt", "Lsr", "Not", "And", "Or"};
-  
   printf("{%s, %s, ", e_str[expr.e_type], r_str[1 + expr.r_type]);
   
   switch (expr.e_type) {
