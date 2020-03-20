@@ -30,8 +30,10 @@ void print_expr(Expr_t expr)
     case BExpr:
       printf("%s, ", b_str[expr.expr.bexpr->b_type]);
       print_expr(expr.expr.bexpr->left);
-      printf(", ");
-      print_expr(expr.expr.bexpr->right);
+      if (expr.expr.bexpr->b_type != Not) {
+        printf(", ");
+        print_expr(expr.expr.bexpr->right);
+      }
       break;
     case Conditional:
       printf("if: ");
@@ -111,7 +113,7 @@ Expr_t wrap_str(char *str)
 {
   Expr_t ret = {Constant, String_R, {malloc(sizeof(Constant_t))}};
   *(ret.expr.constant) = (Constant_t){Constant, String_R, {(size_t)malloc(sizeof(char)*(1+strlen(str)))}};
-  strcpy(ret.expr.constant->str, str);
+  sprintf(ret.expr.constant->str, "%s", str);
   return ret;
 }
 
