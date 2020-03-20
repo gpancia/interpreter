@@ -28,6 +28,9 @@ Expr_t parse_expr(Token **token_ptr)
     if (token->tk < 5 || token->tk == Id) { // skip constants and binds for now
       NXT_TK;
     }
+    else if (token->tk == Newline){
+      break;
+    }
     else if (token->tk == Cond){ // skip ifs for now
       if (token->next == NULL){
         token->next = pop_tk_line();
@@ -82,9 +85,6 @@ Expr_t parse_expr(Token **token_ptr)
     }
     else if (token->tk == Comma){
       PERR_FL("unexpected comma");
-    }
-    else if (token->tk == Newline){
-      break;
     }
     else {
       char err[1000];
@@ -190,8 +190,8 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
               file_name, line_number, e.r_type);
       exit(1);
     }
-    ret = (Expr_t){Sub, e.r_type, {malloc(sizeof(Arith_t))}};
-    *(ret.expr.arith) = (Arith_t){Sub, e.r_type, ZERO_CONSTANT, e};
+    ret = (Expr_t){Mul, e.r_type, {malloc(sizeof(Arith_t))}};
+    *(ret.expr.arith) = (Arith_t){Mul, e.r_type, wrap_int(-1), e};
   }
   else if (seq(op, "!")){
     if (e.r_type == String_R){
