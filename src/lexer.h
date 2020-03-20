@@ -7,11 +7,14 @@ extern char *token_type_string[];
 
 // Constants:  <5
 enum token_type {Int, Float, Str,
-				 Bool, Char,
-				 Cond, Id, Oper,
-				 OParens, CParens, Comma,
-				 OBrace, CBrace,
-				 Newline, Null};
+                 Bool, Char,
+                 Cond, Id, Oper,
+                 OParens, CParens,
+                 OBrace, CBrace,
+                 OBracket, CBracket, Comma,
+                 Newline, Null};
+
+extern char *t_str[];
 
 extern char *file_name;
 

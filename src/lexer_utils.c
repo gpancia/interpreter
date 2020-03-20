@@ -8,14 +8,6 @@
 #include "lexer_utils.h"
 #include "lexer.h"
 
-char *token_type_string[] =
-  				{"int", "float", "str",
-				 "bool", "char",
-				 "cond", "id", "oper", 
-				 "oparens", "cparens", "comma",
-				 "obrace", "cbrace",
-				 "newline", "null"}; // for printing, index = enum
-
 int curr_arg = 1;
 
 //[number of interrupts]{[token_type enum][interrupt]...}
@@ -49,7 +41,7 @@ void print_all_tokens2(int argc, char *argv[])
   lex(fp);
   Token *curr = tk_lst.head.next;
   while (curr != NULL){
-	printf("[%s", token_type_string[curr->tk]);
+	printf("[%s", t_str[curr->tk]);
 	if (curr->val == NULL)
 	  printf("]\n");
 	else
@@ -74,7 +66,7 @@ void print_all_tokens(int argc, char *argv[])
   lex(fp);
   Token *curr = tk_lst.head.next;
   while (curr != NULL){
-	printf("[%s", token_type_string[curr->tk]);
+	printf("[%s", t_str[curr->tk]);
 	if (curr->val == NULL)
 	  printf("]\n");
 	else
@@ -93,7 +85,7 @@ void test_interrupts()
   for (int i = 0; i < interrupt_list.size; i++){
 	if (curr_tk != interrupt_list.interrupt[i].tk_t){
 	  curr_tk = interrupt_list.interrupt[i].tk_t;
-	  printf("\n%s:\n", token_type_string[curr_tk]);
+	  printf("\n%s:\n", t_str[curr_tk]);
 	}
 	if (interrupt_list.interrupt[i].c == '\n')
 	  printf("\t\\n");
