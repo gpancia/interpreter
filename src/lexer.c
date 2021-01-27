@@ -4,6 +4,7 @@
 #include <libgen.h>
 #include <regex.h>
 #include "lexer.h"
+#include "flags.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -15,6 +16,7 @@ InterruptList interrupt_list;
 TokenList tk_lst = {};
 int file_line_num = 0;
 char *file_name;
+
 #define PERR_FL(msg) fprintf(stderr, "%s:%s:%d: error: %s", __func__, file_name, file_line_num, msg);
 
 // for determining type of token and whether or not to store its string (storing '\n' is pointless, for example)

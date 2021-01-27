@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "flags.h"
 #include "lexer.h"
 #include "lexer_utils.h"
 #include "parser.h"
@@ -19,8 +20,11 @@ char *r_str[] = {"Undef_R", "Int_R", "Float_R", "String_R", "Bool_R"};
 
 char *b_str[] = {"Eql", "Nql", "Geq", "Leq", "Grt", "Lsr", "Not", "And", "Or"};
 
+char FLAGS = 0;
+
 int main(int argc, char *argv[])
 {
+    FLAGS = parse_flags(argc, argv);
     update_interrupts();
     print_all_tokens2(argc, argv);
     Expr_t expr;

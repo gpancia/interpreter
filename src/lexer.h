@@ -1,8 +1,6 @@
 #ifndef __LEXER_H__
 #define __LEXER_H__
 
-
-
 #define seq(s1,s2) !strcmp(s1,s2)
 
 extern char *token_type_string[];
@@ -45,7 +43,6 @@ typedef struct {
 
 extern TokenList tk_lst;
 extern InterruptList interrupt_list;
-extern char* stk_lst;
 
 void tk_lst_init(); // initializes global var tk_lst 
 void tk_lst_free(); // frees all malloc'd fields in tk_lst
