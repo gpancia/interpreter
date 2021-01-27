@@ -422,13 +422,15 @@ Expr_t parse_parens(Token **token_ptr)
     Token *token = *token_ptr;
     Token *start = token;
     // TODO: ensure not checking what token->next is doesn't cause problems
-    if (token->tk == OParens) {
+    if (token->tk == OParens && token->next != NULL) {
         start = token->next;
     }
     Token *end = skip_nest(&token, OParens, CParens);
+    /* 
     if (end->next->next != token) {
-        fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
+       fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
     }
+    */
     end->next = NULL;
     return parse_expr(&start);
 }
@@ -440,13 +442,13 @@ Expr_t parse_list(Token **token_ptr)
 {
     Token *token = *token_ptr;
     if (token == NULL){
-        PERR("trailing '('");
+        PERR("trailing '['");
     }
     else if (token->tk != OBracket){
-        PERR_FL("expected '('");
+        PERR_FL("expected '['");
     }
     else if (token->next == NULL){
-        PERR_FL("trailing '('");
+        PERR_FL("trailing '['");
     }
     NXT_TK;
 
@@ -459,7 +461,7 @@ Expr_t parse_list(Token **token_ptr)
     // Since every time a new element is found new memory is malloc'd, to avoid
     // having an empty head at the beginning of the list, this if/else statement
     // is necessary before the while loop
-    if (token->tk == CParens) {
+    if (token->tk == CBracket) {
         curr->head = NULL_EXPR;
     }
     else {
@@ -480,7 +482,7 @@ Expr_t parse_list(Token **token_ptr)
             curr->head = parse_expr(&token);
         }
     }
-    PERR_FL("missing ')'");
+    PERR_FL("missing ']'");
 }
 
 Expr_t parse_sequence(Token **token_ptr)
