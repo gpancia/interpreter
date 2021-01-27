@@ -32,7 +32,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 
 $(EXEFILE): $(addprefix $(OBJDIR)/, $(OBJFILES)) | $(BINDIR) 
 	@echo "==== Linking $@. ===="
-	gcc $(addprefix $(OBJDIR)/, $(OBJFILES)) -o $@
+	gcc $(addprefix $(OBJDIR)/, $(OBJFILES)) -g -o $@
 
 clean:
 	@rm -rf $(OBJDIR)

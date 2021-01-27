@@ -20,25 +20,25 @@ extern char *file_name;
 
 
 typedef struct Token{
-  enum token_type tk;
-  char *val;
-  struct Token *next;
-  struct Token *prev;
-  int line_num; // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
+    enum token_type tk;
+    char *val;
+    struct Token *next;
+    struct Token *prev;
+    int line_num; // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
 }Token;
 
 // for easy freeing
 typedef struct {
-  Token head;  // should be a Null token
-  Token *tail;
+    Token head;  // should be a Null token
+    Token *tail;
 }TokenList;
 
 typedef struct {
-  int size;
-  struct {
+    int size;
+    struct {
 	char c;
 	enum token_type tk_t;
-  }*interrupt;
+    }*interrupt;
 }InterruptList;
 
 extern TokenList tk_lst;
@@ -50,17 +50,17 @@ void tk_free(Token*); // frees a malloc'd token and its string, if any
 int tk_add(char *wrd); // adds a token to tk_lst with the appropriate type enum
 int lex(char *file_path); // reads a file and turns it into a list of tokens using tk_add()
 void build_interrupts(); // reads a file with characters that interrupt token names, enabling separation of, for example, a*b into tokens 'a', '*' and 'b'.
-							   // if file does not exist, calls lexer_utils and builds it.
+// if file does not exist, calls lexer_utils and builds it.
 
 int is_interrupt(char c);
 
 typedef struct tk_match_t{
-  // token type enum corresponding to chars in matches
-  enum token_type tk; 
-  // whether or not the token's value is needed
-  // (i.e.: storing '\n' is pointless malloc'ing and free'ing)
-  char has_val;
-  int num_patterns; // necessary for looping through pattern array properly
+    // token type enum corresponding to chars in matches
+    enum token_type tk; 
+    // whether or not the token's value is needed
+    // (i.e.: storing '\n' is pointless malloc'ing and free'ing)
+    char has_val;
+    int num_patterns; // necessary for looping through pattern array properly
 }tk_match_t;
 
 extern tk_match_t tk_match[];
