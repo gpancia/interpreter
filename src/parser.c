@@ -419,18 +419,18 @@ Expr_t parse_cond(Token **token_ptr)
 
 Expr_t parse_parens(Token **token_ptr)
 {
-  Token *token = *token_ptr;
-  Token *start = token;
-  // TODO: ensure not checking what token->next is doesn't cause problems
-  if (token->tk == OParens) {
-    start = token->next;
-  }
-  Token *end = skip_nest(&token, OParens, CParens);
-  if (end->next->next != token) {
-    fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
-  }
-  end->next = NULL;
-  return parse_expr(&start);
+    Token *token = *token_ptr;
+    Token *start = token;
+    // TODO: ensure not checking what token->next is doesn't cause problems
+    if (token->tk == OParens) {
+        start = token->next;
+    }
+    Token *end = skip_nest(&token, OParens, CParens);
+    if (end->next->next != token) {
+        fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
+    }
+    end->next = NULL;
+    return parse_expr(&start);
 }
 
 
@@ -438,17 +438,17 @@ Expr_t parse_parens(Token **token_ptr)
 // TODO: implement commas
 Expr_t parse_list(Token **token_ptr)
 {
-  Token *token = *token_ptr;
-  if (token == NULL){
-    PERR("trailing '('");
-  }
-  else if (token->tk != OBracket){
-    PERR_FL("expected '('");
-  }
-  else if (token->next == NULL){
-    PERR_FL("trailing '('");
-  }
-  NXT_TK;
+    Token *token = *token_ptr;
+    if (token == NULL){
+        PERR("trailing '('");
+    }
+    else if (token->tk != OBracket){
+        PERR_FL("expected '('");
+    }
+    else if (token->next == NULL){
+        PERR_FL("trailing '('");
+    }
+    NXT_TK;
 
     Expr_u lst;
     lst.cons = malloc(sizeof(Cons_t));
@@ -583,8 +583,8 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
         PERR_FL("token type and open don't match");
     }
     /* if (token->next->tk == close) { 
-    last = token;  // save last token to not equal close 
-    } */
+       last = token;  // save last token to not equal close 
+       } */
     NXT_TK;
     int nested = 1;
     enum token_type tk;
