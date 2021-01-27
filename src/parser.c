@@ -80,7 +80,10 @@ Expr_t parse_expr(Token **token_ptr)
         else if (token->tk == OParens) {
             skip_nest(&token, OParens, CParens);
         }
-        else if (token->tk == CParens || token->tk == CBrace) {
+        else if (token->tk == OBracket) {
+            skip_nest(&token, OBracket, CBracket);
+        }
+        else if (token->tk == CParens || token->tk == CBrace || token->tk == CBracket) {
             PERR_FL("mismatched closing brace or paren");
         }
         else if (token->tk == Comma){
@@ -421,7 +424,6 @@ Expr_t parse_parens(Token **token_ptr)
 {
     Token *token = *token_ptr;
     Token *start = token;
-    // TODO: ensure not checking what token->next is doesn't cause problems
     if (token->tk == OParens && token->next != NULL) {
         start = token->next;
     }
@@ -578,6 +580,7 @@ Expr_t parse_constant(Token **token_ptr)
 Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
 {
     Token *token = *token_ptr;
+    Token *start = token;
     if (token == NULL){
         PERR("NULL pointer");
     }
@@ -597,9 +600,9 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
         }
         else if (tk == close){
             if (--nested == 0){
-                if (token->next && token->next->tk != Newline) {
-                    push_tk_line(token->next);
-                }
+                /* if (token->next && token->next->tk != Newline) { */
+                    /* push_tk_line(token->next); */
+                /* } */
                 NXT_TK;
                 *token_ptr = token;
                 return token;
