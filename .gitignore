@@ -76,6 +76,7 @@ data/lexer_token_interrupts.dat
 .Rhistory
 build/
 output/
+src/compile_commands.json
 
 # Emacs backup files
 **/\#*\#
