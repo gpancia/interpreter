@@ -1,7 +1,7 @@
 #include <string.h>
 #include "flags.h"
 
-const char* flag_chars = "dNNNNNNN";
+const char* flag_chars = "dvNNNNNN";
 
 char default_flags() {
     return (char) DEBUG_FLAG;
