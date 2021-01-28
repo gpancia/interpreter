@@ -106,7 +106,8 @@ Expr_t wrap_int(int i)
 Expr_t wrap_flt(double f)
 {
     Expr_t ret = {Constant, Float_R, {malloc(sizeof(Constant_t))}};
-    *(ret.expr.constant) = (Constant_t){Constant, Float_R, {f}};
+    // *(ret.expr.constant) = (Constant_t){Constant, Float_R, {f}};
+    *(ret.expr.constant) = (Constant_t){Constant, Float_R, {*((long long*)&f)}};  // evil bit trick
     return ret;
 }
 Expr_t wrap_str(char *str)

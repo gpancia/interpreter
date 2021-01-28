@@ -113,7 +113,7 @@ typedef struct Constant_t{
     enum expr_type e_type;
     enum result_type r_type;
     union {
-        long int i;
+        long long i;
         double f;
         char *str;
         char b;
