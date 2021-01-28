@@ -2,6 +2,7 @@
 #define __FLAGS_H__
 
 #define DEBUG_FLAG 1
+#define VERBOSE_FLAG 2
 
 extern char FLAGS;
 extern const char* flag_chars;

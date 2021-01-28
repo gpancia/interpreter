@@ -3,12 +3,13 @@
 #include <string.h>
 #include <libgen.h>
 #include <regex.h>
-#include "lexer.h"
-#include "flags.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "lexer.h"
+#include "config.h"
+#include "flags.h"
 
 #define MAX_INTERRUPTS 100
 
@@ -21,12 +22,14 @@ char *file_name;
 
 // for determining type of token and whether or not to store its string (storing '\n' is pointless, for example)
 tk_match_t tk_match[] = {{Newline, 0, 1},{OParens, 0, 1},{CParens, 0, 1},
-                         {OBrace, 0, 1},{CBrace, 0, 1}, {Comma, 0, 1},
+                         {OBrace, 0, 1},{CBrace, 0, 1},
+                         {OBracket, 0, 1}, {CBracket, 0, 1}, {Comma, 0, 1},
                          {Oper, 1, 14},
                          {Str, 1, 1}, {Bool, 1, 2}, {Cond, 0, 1}
 };
 char *tk_pattern[][14] = {{"\n"},{"("},{")"},
-                          {"{"},{"}"},{","},
+                          {"{"},{"}"},
+                          {"["},{"]"},{","},
                           {"+","-","*","/","=",">",">=",
                            "<","<=","==","!","&&","||", "!="},
                           {"\""},{"true","false"},{"if"}};
@@ -293,7 +296,9 @@ int tk_add(char *wrd)
 //[number of interrupt types]{[token_type enum][interrupt's first char]...}
 void build_interrupts()
 {
-    int fd = open("data/lexer_token_interrupts.dat", O_RDONLY);
+    char tk_interrupt_fp[200];
+    sprintf(tk_interrupt_fp, "%s/data/lexer_token_interrupts.dat", ROOT_DIR);
+    int fd = open(tk_interrupt_fp, O_RDONLY);
     struct stat sb;
     if (fd == -1 || fstat(fd, &sb) == -1)
         PERR_FL("invalid file/file size");
