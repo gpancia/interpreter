@@ -1,0 +1,6 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+/* #cmakedefine DATA_DIR_ENABLE */
+#cmakedefine ROOT_DIR "@ROOT_DIR@"
+
+#endif

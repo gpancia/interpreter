@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.16)
 project(interpreter)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
+set(CMAKE_BUILD_TYPE Debug)
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR "${CMAKE_INSTALL_PREFIX}" STREQUAL "")
     set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default install path" FORCE )
@@ -34,6 +35,10 @@ message(STATUS "Data dir (in install tree): ${DATA_DIR_INSTALL}")
 
 message(STATUS "Configuring source files")
 
+#option(DATA_DIR_ENABLE "DDE" ON)
+#if (DATA_DIR_ENABLE)
+set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+#endif()
 configure_file(
     ${SOURCE_DIR}/config.h.in
     ${SOURCE_DIR}/config.h
@@ -70,7 +75,7 @@ set_source_files_properties(${EXTRAFILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 message(STATUS "Configuring compiler options")
 
-
+msg("${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -W -Wall -Wextra -fdiagnostics-color=always -Wfloat-equal -Wshadow -Wcast-align -Wcast-qual -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wno-cast-align -g -c")
 
 message(STATUS "Building for ${CMAKE_SYSTEM_NAME}.")

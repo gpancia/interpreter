@@ -7,13 +7,16 @@
 
 #include "lexer_utils.h"
 #include "lexer.h"
-
+#include "config.h"
+#include "flags.h"
 int curr_arg = 1;
 
 //[number of interrupts]{[token_type enum][interrupt]...}
 void update_interrupts() 
 {
-    FILE *fd = fopen("data/lexer_token_interrupts.dat", "w");
+    char filename[200];
+    sprintf(filename, "%s/data/lexer_token_interrupts.dat", ROOT_DIR);
+    FILE *fd = fopen(filename, "w");
     int ntk = num_tk_types - 2;
     int nint = 0;
     for (int i = 0; i < ntk; i++)
@@ -30,25 +33,27 @@ void update_interrupts()
 
 void print_all_tokens2(int argc, char *argv[])
 {
-    char *fp;
+    char fp[200];
     if (curr_arg >= argc-1){
 	printf("Using default file, \"test.txt\"\n");
-	fp = "test/test.txt";
+	sprintf(fp, "%s/test/test.txt", ROOT_DIR);
     }
-    else
-	fp = argv[++curr_arg];
+    else {
+	strcpy(fp, argv[++curr_arg]);
+    }
     tk_lst_init();
     lex(fp);
-    Token *curr = tk_lst.head.next;
-    while (curr != NULL){
-	printf("[%s", t_str[curr->tk]);
-	if (curr->val == NULL)
-            printf("]\n");
-	else
-            printf(" : %s]\n", curr->val);
-	curr = curr->next;
+    if (FLAGS & VERBOSE_FLAG) {
+        Token *curr = tk_lst.head.next;
+        while (curr != NULL){
+            printf("[%s", t_str[curr->tk]);
+            if (curr->val == NULL)
+                printf("]\n");
+            else
+                printf(" : %s]\n", curr->val);
+            curr = curr->next;
+        }
     }
-
     printf("--------DONE LEXING--------\n\n");
   
 }
