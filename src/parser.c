@@ -124,6 +124,9 @@ Expr_t parse_expr(Token **token_ptr)
         else if (left->tk == OBrace) {
             ret = parse_sequence(&left);
         }
+        else if (left->tk == OBracket) {
+            ret = parse_list(&left);
+        }
         else {
             char err[100];
             sprintf(err, "debug this, unexpected token %d", left->tk); // shouldn't happen
@@ -469,34 +472,87 @@ Expr_t parse_list(Token **token_ptr)
     }
     NXT_TK;
 
+    // Expr_u lst;
+    // cons->e_type = Generic;
+    // cons->r_type = Undef_R;
+    // cons->head = NULL_EXPR;
+    // cons->tail = malloc(sizeof(Cons_t));
+    // lst.cons = cons->tail;
+    // cons->tail->head = NULL_EXPR;
+    // cons->tail->tail = NULL;
+    // Cons_t cons = {Generic, Undef_R, NULL_EXPR, malloc(sizeof(Cons_t))};
+    // lst.cons = cons.tail;
+    // cons.tail->head = NULL_EXPR;
+    // cons.tail->tail = NULL;
+    // Cons_t *curr = &cons;
+    // Expr_t lst_expr = {List, Undef_R, {malloc(sizeof(Expr_u))}};
+
     Expr_u lst;
     lst.cons = malloc(sizeof(Cons_t));
-    lst.cons->e_type = List;
+    lst.cons->e_type = Undef_R;
     Expr_t lst_expr = {List, Undef_R, lst};
     Cons_t *curr = lst.cons;
-  
-    // Since every time a new element is found new memory is malloc'd, to avoid
-    // having an empty head at the beginning of the list, this if/else statement
-    // is necessary before the while loop
-    if (token->tk == CBracket) {
-        curr->head = NULL_EXPR;
-    }
-    else {
-        if (token->tk == Newline) { NXT_TK; }
-        curr->head = parse_expr(&token);
-    }
+    
+    // // Since every time a new element is found new memory is malloc'd, to avoid
+    // // having an empty head at the beginning of the list, this if/else statement
+    // // is necessary before the while loop
+    // if (token->tk == CBracket) {
+    //     curr->head = NULL_EXPR;
+    // }
+    // else {
+    //     if (token->tk == Newline) { NXT_TK; }
+    //     curr->head = parse_expr(&token);
+    // }
+    Token *element_end;
+    Token *temp;
     while (token != NULL){
-        if (token->tk == CBracket){
-            curr->tail = NULL;
-            lst_expr.r_type = curr->head.r_type;
-            NXT_TK;
-            *token_ptr = token;
-            return lst_expr;
-        }
-        else {
-            curr->tail = malloc(sizeof(Cons_t));
-            curr = curr->tail;
-            curr->head = parse_expr(&token);
+        element_end = token;
+        while (element_end != NULL) {
+            switch (element_end->tk) {
+            case OBracket:  // allow for nested lists
+                skip_nest(&element_end, OBracket, CBracket);
+                element_end = element_end->next;
+                break;
+            case Comma:
+                if (element_end->prev->tk != Comma && element_end->prev->tk != OBracket) {
+                    temp = element_end;
+                    element_end->prev->next = NULL;
+                    curr->tail = malloc(sizeof(Cons_t));
+                    curr = curr->tail;
+                    curr->head = parse_expr(&token);
+                    curr->e_type = List;
+                    curr->r_type = curr->head.r_type;
+                    element_end->prev->next = temp;
+                    token = temp->next;
+                    element_end = token;
+                }
+                curr->tail = NULL;
+                break;
+            case CBracket:
+                if (element_end->prev->tk != Comma && element_end->prev->tk != OBracket) {
+                    temp = element_end;
+                    element_end->prev->next = NULL;
+                    curr->tail = malloc(sizeof(Cons_t));
+                    curr = curr->tail;
+                    curr->head = parse_expr(&token);
+                    curr->e_type = List;
+                    curr->r_type = curr->head.r_type;
+                    element_end->prev->next = temp;
+                    *token_ptr = element_end->next;
+                }
+                curr->tail = NULL;
+                lst_expr.r_type = curr->head.r_type;
+                Cons_t *null_head = lst.cons;
+                Expr_u lst_2;
+                lst_2.cons = lst.cons->tail;
+                lst.cons = lst.cons->tail;
+                free(null_head);
+                lst_expr.expr = lst_2;
+                return lst_expr;
+            default:
+                element_end = element_end->next;
+                break;
+            }
         }
     }
     PERR_FL("missing ']'");
