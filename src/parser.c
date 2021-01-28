@@ -22,6 +22,10 @@ Expr_t parse_expr(Token **token_ptr)
     
     // find top-most operator in AST and its operand(s). If none, parse expression normally
     Token *left = token, *highest_op_tk, *right;
+
+    // for conditionals: 
+    Token *pred = NULL;
+    Token *cond_tf[2] = {NULL, NULL};
     enum ordering {divmul, addsub, bexpr, set, null=-1}; // ordering is lowest to highest in AST, e.g.: + is higher than *
     enum ordering highest_op = null;
     while (token != NULL){
@@ -31,16 +35,17 @@ Expr_t parse_expr(Token **token_ptr)
         else if (token->tk == Newline){
             break;
         }
-        else if (token->tk == Cond){ // skip ifs for now
+        else if (token->tk == Cond){
             if (token->next == NULL){
                 token->next = pop_tk_line();
             }
             NXT_TK;
+            pred = token;
             // skip_nest checks for anything wrong with the layout of the if statement
             skip_nest(&token, OParens, CParens); // skip over predicate
+            NXT_TK;
             // skip over if_true and if_false
             for (int i = 0; i < 2; i++) {
-                // 
                 if (token->tk != OBrace) {
                     if (token->tk == Newline) {
                         NXT_TK;
@@ -53,7 +58,9 @@ Expr_t parse_expr(Token **token_ptr)
                         PERR_FL("Bad if-statement format");
                     }
                 }
+                cond_tf[i] = token;
                 skip_nest(&token, OBrace, CBrace);
+                NXT_TK;
             }
         }
         else if (token->tk == Oper){
@@ -76,12 +83,15 @@ Expr_t parse_expr(Token **token_ptr)
         }
         else if (token->tk == OBrace) {
             skip_nest(&token, OBrace, CBrace);
+            NXT_TK;
         }
         else if (token->tk == OParens) {
             skip_nest(&token, OParens, CParens);
+            NXT_TK;
         }
         else if (token->tk == OBracket) {
             skip_nest(&token, OBracket, CBracket);
+            NXT_TK;
         }
         else if (token->tk == CParens || token->tk == CBrace || token->tk == CBracket) {
             PERR_FL("mismatched closing brace or paren");
@@ -103,7 +113,7 @@ Expr_t parse_expr(Token **token_ptr)
             ret = parse_constant(&left);
         }
         else if (left->tk == Cond) {
-            ret = parse_cond(&left);
+            ret = parse_cond(&left, pred, cond_tf[0], cond_tf[1]);
         }
         else if (left->tk == Id) {
             ret = parse_id(&left);
@@ -143,7 +153,7 @@ Expr_t parse_expr(Token **token_ptr)
             else if (seq(op, "="))
                 ret = parse_set(&left);
             else {
-                left->next = NULL;
+                highest_op_tk->prev->next = NULL;
                 ret = parse_op_binary(op, parse_expr(&left), parse_expr(&right), highest_op_tk->line_num);
             }
         }
@@ -163,8 +173,8 @@ Expr_t parse_id(Token** token_ptr)
     Token *token = *token_ptr;
     char *name = token->val;
     NXT_TK;
-    if (token != NULL && token->tk == OParens){
-        Fun_t fun = {Function, Undef_R, malloc(sizeof(char*)), parse_parens(&token).expr.cons};
+    if (token != NULL && token->tk == OBracket){
+        Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_list(&token).expr.cons};
         strcpy(fun.name, name);
         expr.func = malloc(sizeof(Fun_t));
         *(expr.func) = fun;
@@ -322,7 +332,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
 // check if set is for var or func (parens before '=')
 Expr_t parse_set(Token **token_ptr)
 {
-    if ((*token_ptr)->next->tk == OParens) {
+    if ((*token_ptr)->next->tk == OBracket) {
         return parse_set_func(token_ptr);
     }
     else if ((*token_ptr)->next->tk == Oper){
@@ -390,23 +400,22 @@ char* get_name(Token **token_ptr)
 }
 
 
-Expr_t parse_cond(Token **token_ptr)
+Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_false)
 {
-    Token *token = *token_ptr;
-    if (token == NULL){
-        PERR_FL("expected token after conditional");
-    }
-    if (token->next == NULL){
-        PERR("expected token after conditional");
-    }
-    NXT_TK;
-    if (token->tk != OParens){
-        PERR_FL("error: expected boolean expression (surrounded by parens)");
-    }
-  
-    Expr_t predicate = parse_expr(&token);
-    Expr_t if_true = parse_expr(&token);
-    Expr_t if_false = parse_expr(&token);
+    Token *token = pred;
+    skip_nest(&token, OParens, CParens);
+    token->next = NULL;
+    Expr_t predicate = parse_parens(&pred);
+    
+    token = cond_true;
+    skip_nest(&token, OBrace, CBrace);
+    token->next = NULL;
+    Expr_t if_true = parse_sequence(&cond_true);
+    token = cond_false;
+    skip_nest(&token, OBrace, CBrace);
+    *token_ptr = token->next;
+    token->next = NULL;
+    Expr_t if_false = parse_sequence(&cond_false);
     if (if_false.r_type != if_true.r_type){
         PERR_FL("error: type mismatch between cases");
     }
@@ -416,7 +425,6 @@ Expr_t parse_cond(Token **token_ptr)
     ret.r_type = cond.r_type;
     ret.expr.cond = malloc(sizeof(Cond_t));
     *(ret.expr.cond) = cond;
-    *token_ptr = token;
     return ret;
 }
 
@@ -426,8 +434,15 @@ Expr_t parse_parens(Token **token_ptr)
     Token *start = token;
     if (token->tk == OParens && token->next != NULL) {
         start = token->next;
+        
     }
     Token *end = skip_nest(&token, OParens, CParens);
+    end = end->prev;
+    free(end->next);
+    free(start->prev);
+    start->prev = NULL;
+    end->next = NULL;
+    
     /* 
     if (end->next->next != token) {
        fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
@@ -526,7 +541,7 @@ Expr_t parse_sequence(Token **token_ptr)
             curr->tail = NULL;
             seq_expr.r_type = curr->head.r_type;
             NXT_TK;
-            if (token->tk == Newline) {
+            if (token != NULL && token->tk == Newline) {
                 NXT_TK;
             }
             *token_ptr = token;
@@ -603,7 +618,7 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
                 /* if (token->next && token->next->tk != Newline) { */
                     /* push_tk_line(token->next); */
                 /* } */
-                NXT_TK;
+                /* NXT_TK; */
                 *token_ptr = token;
                 return token;
             }

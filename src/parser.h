@@ -16,7 +16,7 @@ Expr_t parse_set_var(Token**);
 Expr_t parse_set_func(Token**); 
 char*  get_name(Token**);
 
-Expr_t parse_cond(Token**); 
+Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_false); 
 
 Expr_t parse_parens(Token**);
 Expr_t parse_list(Token**);
