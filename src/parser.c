@@ -651,7 +651,6 @@ Expr_t parse_constant(Token **token_ptr)
 Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
 {
     Token *token = *token_ptr;
-    Token *start = token;
     if (token == NULL){
         PERR("NULL pointer");
     }
