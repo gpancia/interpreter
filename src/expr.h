@@ -2,7 +2,6 @@
 #define __EXPR_H__
 
 #define NULL_EXPR (Expr_t){Generic, Undef_R, {NULL}}
-#define ZERO_CONSTANT (Expr_t){Constant, Int_R, {NULL}}
 
 enum expr_type {Add = 0, Sub = 1, Mul = 2, Div = 3,
                 Concat = 4,
@@ -121,6 +120,7 @@ typedef struct Constant_t{
     };
 }Constant_t;
 
+
 int is_null_expr(Expr_t);
 
 void print_expr(Expr_t);
@@ -132,5 +132,7 @@ Expr_t wrap_bool(char);
 
 void free_expr(Expr_t);
 void free_expr_u(Expr_u, enum expr_type);
+
+#define ZERO_CONSTANT wrap_int(0)
 
 #endif
