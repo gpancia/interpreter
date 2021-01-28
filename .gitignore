@@ -68,3 +68,16 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Token interrupts .dat
+data/lexer_token_interrupts.dat
+
+# Misc files/dirs
+.Rhistory
+build/
+output/
+src/compile_commands.json
+
+# Emacs backup files
+**/\#*\#
+**/.\#*
