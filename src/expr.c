@@ -97,23 +97,23 @@ void print_expr(Expr_t expr)
 }
 
 // Constant wrappers
-Expr_t wrap_int(int i)
+Expr_t wrap_int(long long i)
 {
     Expr_t ret = {Constant, Int_R, {malloc(sizeof(Constant_t))}};
-    *(ret.expr.constant) = (Constant_t){Constant, Int_R, {i}};
+    *(ret.expr.constant) = (Constant_t){Constant, Int_R, {.i=i}};
     return ret;
 }
 Expr_t wrap_flt(double f)
 {
     Expr_t ret = {Constant, Float_R, {malloc(sizeof(Constant_t))}};
-    // *(ret.expr.constant) = (Constant_t){Constant, Float_R, {f}};
-    *(ret.expr.constant) = (Constant_t){Constant, Float_R, {*((long long*)&f)}};  // evil bit trick
+    *(ret.expr.constant) = (Constant_t){Constant, Float_R, {.f=f}};
+    // *(ret.expr.constant) = (Constant_t){Constant, Float_R, {*((long long*)&f)}};  // evil bit trick
     return ret;
 }
 Expr_t wrap_str(char *str)
 {
     Expr_t ret = {Constant, String_R, {malloc(sizeof(Constant_t))}};
-    *(ret.expr.constant) = (Constant_t){Constant, String_R, {(size_t)malloc(sizeof(char)*(1+strlen(str)))}};
+    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char*)malloc(sizeof(char)*(1+strlen(str)))}};
     sprintf(ret.expr.constant->str, "%s", str);
     return ret;
 }
