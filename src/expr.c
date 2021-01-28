@@ -67,7 +67,7 @@ void print_expr(Expr_t expr)
         case Constant:
             switch (expr.r_type) {
                 case Int_R:
-                    printf("%ld", expr.expr.constant->i);
+                    printf("%lld", expr.expr.constant->i);
                     break;
                 case Float_R:
                     printf("%f", expr.expr.constant->f);
