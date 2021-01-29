@@ -20,4 +20,6 @@ Expr_t* get_val(char*);
 // returns 1 if error when setting val
 int set_val(char*, Expr_t*);
 
+void print_env();
+
 #endif

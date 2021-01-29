@@ -211,6 +211,7 @@ Expr_t evaluate_arith(Expr_t expr) {
 Expr_t evaluate_set(Expr_t expr) {
     Expr_t val = evaluate_expr(expr.expr.set->val);
     set_val(expr.expr.set->name, &val);
+    print_env();
     return val;
 }
 
