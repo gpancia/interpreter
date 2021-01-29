@@ -61,5 +61,7 @@ void print_env() {
     while (curr != NULL) {
         printf("\t%s: ", curr->name);
         print_expr(*curr->expr);
+        curr = curr->next;
     }
+    printf("\n");
 }
