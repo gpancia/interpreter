@@ -2,6 +2,7 @@
 #define __EXPR_H__
 
 #define NULL_EXPR (Expr_t){Generic, Undef_R, {NULL}}
+#define MAX_STR_LEN 500
 
 enum expr_type {Add = 0, Sub = 1, Mul = 2, Div = 3,
                 Concat = 4,
@@ -116,7 +117,7 @@ typedef struct Constant_t{
         long long i;
         double f;
         char *str;
-        char b;
+        long long b;
     };
 }Constant_t;
 
@@ -129,6 +130,16 @@ Expr_t wrap_int(long long);
 Expr_t wrap_flt(double);
 Expr_t wrap_str(char*);
 Expr_t wrap_bool(char);
+
+typedef struct Constant_Values {
+    long long i;
+    double f;
+    char str[MAX_STR_LEN];
+    long long b;
+}Constant_Values;
+
+// consolidates the types of the constant pair in priority order String -> Float -> Int -> Bool
+enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values lr_vals[2]);
 
 void free_expr(Expr_t);
 void free_expr_u(Expr_u, enum expr_type);

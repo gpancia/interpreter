@@ -46,6 +46,7 @@ configure_file(
 
 set(FILE_NAMES
     env
+    evaluator
     expr
     flags
     lexer
