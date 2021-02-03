@@ -139,7 +139,9 @@ typedef struct Constant_Values {
 }Constant_Values;
 
 // consolidates the types of the constant pair in priority order String -> Float -> Int -> Bool
-enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values lr_vals[2]);
+enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *lr_vals[2]);
+
+Expr_t copy_expr(Expr_t*);
 
 void free_expr(Expr_t);
 void free_expr_u(Expr_u, enum expr_type);
