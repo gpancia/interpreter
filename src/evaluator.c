@@ -176,7 +176,7 @@ Expr_t evaluate_arith(Expr_t expr) {
         ret_double = lr_double[0] / lr_double[1];
         break;
     case Concat:
-        sprintf(ret_str, "%s%s", lr_str[0], lr_str[0]);
+        sprintf(ret_str, "%s%s", lr_str[0], lr_str[1]);
         break;
     default:
         fprintf(stderr, "evaluate_arith: following expression of type %s should not be evaluated here\n",
@@ -188,6 +188,8 @@ Expr_t evaluate_arith(Expr_t expr) {
     ret.e_type = Constant;
     ret.r_type = r_type;
     ret.expr.constant = (Constant_t*) malloc(sizeof(Constant_t));
+    ret.expr.constant->e_type = Constant;
+    ret.expr.constant->r_type = r_type;
     switch (r_type) {
     case Int_R:
         ret.expr.constant->i = ret_int;
@@ -211,11 +213,11 @@ Expr_t evaluate_arith(Expr_t expr) {
 Expr_t evaluate_set(Expr_t expr) {
     Expr_t val = evaluate_expr(expr.expr.set->val);
     set_val(expr.expr.set->name, &val);
-    print_env();
     return val;
 }
 
 Expr_t evaluate_id(Expr_t expr) {
+    // print_env();
     Var_t *var = expr.expr.var;
     char *name = var->name;
     Expr_t *val = get_val(name);
@@ -242,20 +244,20 @@ Expr_t evaluate_bexpr(Expr_t expr) {
         ret_c->b = (long long) (left_b == 0);
     }
     else {
-        Constant_Values lr_vals[2];
-        Expr_t lr_expr[2] = {bexpr->left, bexpr->right};
+        Constant_Values *lr_vals[2];
+        Expr_t lr_expr[2] = {evaluate_expr(bexpr->left), evaluate_expr(bexpr->right)};
         enum result_type r_type = consolidate_constant_pair(lr_expr, lr_vals);
         if (r_type == String_R) {
-            lr_vals[0].i = (long long) strlen(lr_vals[0].str);
-            lr_vals[1].i = (long long) strlen(lr_vals[1].str);
+            lr_vals[0]->i = (long long) strlen(lr_vals[0]->str);
+            lr_vals[1]->i = (long long) strlen(lr_vals[1]->str);
         }
         else if (r_type == Bool_R) {
-            lr_vals[0].i = (long long) lr_vals[0].b;
-            lr_vals[1].i = (long long) lr_vals[1].b;
+            lr_vals[0]->i = (long long) lr_vals[0]->b;
+            lr_vals[1]->i = (long long) lr_vals[1]->b;
         }
         else if (r_type == Float_R) {
-            lr_vals[0].i = * (long long*) &lr_vals[0].f;
-            lr_vals[1].i = * (long long*) &lr_vals[1].f;
+            lr_vals[0]->i = * (long long*) &lr_vals[0]->f;
+            lr_vals[1]->i = * (long long*) &lr_vals[1]->f;
         }
 
         char is_float = (char) (r_type == Float_R);
@@ -264,32 +266,34 @@ Expr_t evaluate_bexpr(Expr_t expr) {
         case Eql:
             // just check if bits/string are the same
             ret_c->b = (r_type == String_R) ?
-                !strcmp(lr_vals[0].str, lr_vals[1].str) : lr_vals[0].i == lr_vals[1].i;
+                !strcmp(lr_vals[0]->str, lr_vals[1]->str) : lr_vals[0]->i == lr_vals[1]->i;
             break;
         case Nql:
             // !! so that it condenses result into either 1 or 0
             ret_c->b = (r_type == String_R) ?
-                !!strcmp(lr_vals[0].str, lr_vals[1].str) : lr_vals[0].i != lr_vals[1].i;
+                !!strcmp(lr_vals[0]->str, lr_vals[1]->str) : lr_vals[0]->i != lr_vals[1]->i;
             break;
         case Leq:
-            ret_c->b = (is_float) ? lr_vals[0].i <= lr_vals[1].i : lr_vals[0].f <= lr_vals[1].f;
+            ret_c->b = (is_float) ? lr_vals[0]->i <= lr_vals[1]->i : lr_vals[0]->f <= lr_vals[1]->f;
             break;
         case Geq:
-            ret_c->b = (is_float) ? lr_vals[0].i >= lr_vals[1].i : lr_vals[0].f <= lr_vals[1].f;
+            ret_c->b = (is_float) ? lr_vals[0]->i >= lr_vals[1]->i : lr_vals[0]->f >= lr_vals[1]->f;
             break;
         case Lsr:
-            ret_c->b = (is_float) ? lr_vals[0].i < lr_vals[1].i : lr_vals[0].f <= lr_vals[1].f;
+            printf("%lld < %lld = ", lr_vals[0]->i, lr_vals[1]->i);
+            ret_c->b = (is_float) ? lr_vals[0]->i < lr_vals[1]->i : lr_vals[0]->f < lr_vals[1]->f;
+            printf("%lld\n", ret_c->b);
             break;
         case Grt:
-            ret_c->b = (is_float) ? lr_vals[0].i > lr_vals[1].i : lr_vals[0].f <= lr_vals[1].f;
+            ret_c->b = (is_float) ? lr_vals[0]->i > lr_vals[1]->i : lr_vals[0]->f > lr_vals[1]->f;
             break;
         case And:
             // doesn't matter if float, just if 0 or not
-            ret_c->b = lr_vals[0].i && lr_vals[1].i;
+            ret_c->b = lr_vals[0]->i && lr_vals[1]->i;
             break;
         case Or:
             // doesn't matter if float, just if 0 or not
-            ret_c->b = lr_vals[0].i || lr_vals[1].i;
+            ret_c->b = lr_vals[0]->i || lr_vals[1]->i;
             break;
         case Not:
             // should never happen, just here for warning suppression
@@ -309,7 +313,7 @@ Expr_t evaluate_list(Expr_t expr) {
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {
         Expr_t ret = evaluate_expr(curr->head);
-        free_expr(curr->head);
+        // free_expr(curr->head);
         curr->head = ret;
         curr = curr->tail;
     }
