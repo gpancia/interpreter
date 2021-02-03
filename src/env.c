@@ -48,7 +48,8 @@ int set_val(char *name, Expr_t *expr)
     Env *new_env = (Env*) malloc(sizeof(Env));
     new_env->name = (char*) malloc(strlen(name));
     strcpy(new_env->name, name);
-    new_env->expr = expr;
+    new_env->expr = (Expr_t*) malloc(sizeof(Expr_t));
+    *new_env->expr = copy_expr(expr);
     new_env->next = NULL;
     env_tail->next = new_env;
     env_tail = new_env;
@@ -60,7 +61,10 @@ void print_env() {
     printf("Environment:\n");
     while (curr != NULL) {
         printf("\t%s: ", curr->name);
-        print_expr(*curr->expr);
+        if (curr->expr != NULL) {
+            print_expr(*curr->expr);
+            printf("\n");
+        }
         curr = curr->next;
     }
     printf("\n");
