@@ -98,14 +98,14 @@ typedef struct Fun_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
-    Cons_t *args;
+    Expr_t args;
 }Fun_t;
 
 typedef struct FunDef_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
-    Cons_t *args;
+    Expr_t args;
     Expr_t app;
 }FunDef_t;
 

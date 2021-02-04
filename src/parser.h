@@ -25,6 +25,9 @@ Expr_t parse_sequence(Token**);
 Expr_t parse_constant(Token**); 
 
 uint get_cons_size(Cons_t *);
+
+void change_cons_type(Cons_t *, enum expr_type);
+
 // Makes sure that everything nested between open and close is linked, even if
 // in different lines.
 // Returns the last token not equal to close.
