@@ -183,20 +183,29 @@ void tk_lst_init()
     tk_lst.head.prev = NULL;
     tk_lst.head.line_num = -1;
     tk_lst.tail = &(tk_lst.head);
+
+    ll_tk_head = (LL_Token) {NULL, NULL};
+    ll_tk_tail = &ll_tk_head;
+    
 }
 
 void tk_lst_free()
 {
-    if (tk_lst.tail == NULL)
+    // if list empty:
+    if (ll_tk_tail == &ll_tk_head) {
         return;
-    else {
-        Token *curr = tk_lst.tail;
-        while (curr->line_num >= 0 && curr->prev != NULL){
-            Token *temp = curr;
-            curr = curr->prev;
-            tk_free(temp);
-        }
     }
+    LL_Token *curr = ll_tk_head.next;
+    LL_Token *prev = curr;
+    while (curr != NULL) {
+        if (curr->this != NULL) {
+            tk_free(curr->this);
+        }
+        prev = curr;
+        curr = curr->next;
+        free(prev);
+    }
+    free(interrupt_list.interrupt);
 }
 
 void tk_free(Token *token)
@@ -275,10 +284,17 @@ int tk_add(char *wrd)
     tk = Id;
     alloc_val = 1;
  assign: ;
-    Token *new_tk = malloc(sizeof(Token));
+    Token *new_tk = (Token *) malloc(sizeof(Token));
+
+    // adding new_tk to memory management list LL_Token:
+    LL_Token *new_ll_tk = (LL_Token *) malloc(sizeof(LL_Token));
+    *new_ll_tk = (LL_Token) {NULL, new_tk};
+    ll_tk_tail->next = new_ll_tk;
+    ll_tk_tail = new_ll_tk;
+
+    // adding new_tk to mutable tk_lst:
     new_tk->tk = tk;
     if (alloc_val){
-    
         new_tk->val = malloc(sizeof(char)*(strlen(wrd)+1));
         strcpy(new_tk->val,wrd);
     }

@@ -78,7 +78,7 @@ void print_all_tokens(int argc, char *argv[])
             printf(" : %s]\n", curr->val);
 	curr = curr->next;
     }
-    tk_lst_free(tk_lst);
+    tk_lst_free();
     free(interrupt_list.interrupt);
 }
 

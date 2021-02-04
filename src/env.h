@@ -6,6 +6,7 @@
 typedef struct Env {
     char *name;
     Expr_t *expr;
+    LL_Expr *ll_loc;
     struct Env *next;
 } Env;
 
@@ -21,5 +22,7 @@ Expr_t* get_val(char*);
 int set_val(char*, Expr_t*);
 
 void print_env();
+
+void free_env();
 
 #endif

@@ -22,13 +22,29 @@ char *r_str[] = {"Undef_R", "Int_R", "Float_R", "String_R", "Bool_R"};
 
 char *b_str[] = {"Eql", "Nql", "Geq", "Leq", "Grt", "Lsr", "Not", "And", "Or"};
 
+size_t e_size[] = {sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t),
+                   sizeof(Generic_t),
+                   sizeof(Set_t),
+                   sizeof(BExpr_t),
+                   sizeof(Cond_t),
+                   sizeof(Cons_t), sizeof(Cons_t), sizeof(Cons_t),
+                   sizeof(Fun_t), 
+                   sizeof(FunDef_t),
+                   sizeof(Var_t),
+                   sizeof(Constant_t)};
+
 char FLAGS = 0;
 
 int main(int argc, char *argv[])
 {
     FLAGS = parse_flags(argc, argv);
+
     update_interrupts();
+
+    init_ll_expr();
+    
     print_all_tokens2(argc, argv);
+
     int num_expr = 0;
     Expr_t expr_arr[200];
     Token *token;
@@ -47,5 +63,8 @@ int main(int argc, char *argv[])
     }
     print_env();
     printf("\n");
+    free_env();
+    free_all_expr();
+    tk_lst_free();
     return 0;
 }

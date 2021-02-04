@@ -25,29 +25,38 @@ typedef struct Token{
     struct Token *next;
     struct Token *prev;
     int line_num; // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
-}Token;
+} Token;
 
-// for easy freeing
+// output token list, easily manipulatable for parsing but can lose pointers leading to leaks if by itself
 typedef struct {
     Token head;  // should be a Null token
     Token *tail;
-}TokenList;
+} TokenList;
+extern TokenList tk_lst;
+
+// Linked list of pointers that is independent from the alterations to the values it points to
+typedef struct LL_Token{
+    struct LL_Token *next;
+    Token *this;
+} LL_Token;
+
+LL_Token ll_tk_head;  
+LL_Token *ll_tk_tail;
 
 typedef struct {
     int size;
     struct {
 	char c;
 	enum token_type tk_t;
-    }*interrupt;
-}InterruptList;
+    } *interrupt;
+} InterruptList;
 
-extern TokenList tk_lst;
 extern InterruptList interrupt_list;
 
-void tk_lst_init(); // initializes global var tk_lst 
-void tk_lst_free(); // frees all malloc'd fields in tk_lst
+void tk_lst_init(); // initializes global vars tk_lst and full_tk_lst
+void tk_lst_free(); // frees all malloc'd fields in full_tk_lst
 void tk_free(Token*); // frees a malloc'd token and its string, if any
-int tk_add(char *wrd); // adds a token to tk_lst with the appropriate type enum
+int tk_add(char *wrd); // adds a token to tk_lst with the appropriate type enum and its pointer to full_tk_lst
 int lex(char *file_path); // reads a file and turns it into a list of tokens using tk_add()
 void build_interrupts(); // reads a file with characters that interrupt token names, enabling separation of, for example, a*b into tokens 'a', '*' and 'b'.
 // if file does not exist, calls lexer_utils and builds it.
@@ -61,7 +70,7 @@ typedef struct tk_match_t{
     // (i.e.: storing '\n' is pointless malloc'ing and free'ing)
     char has_val;
     int num_patterns; // necessary for looping through pattern array properly
-}tk_match_t;
+} tk_match_t;
 
 extern tk_match_t tk_match[];
 extern char* tk_pattern[][14];

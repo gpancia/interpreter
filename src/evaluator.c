@@ -156,7 +156,7 @@ Expr_t evaluate_arith(Expr_t expr) {
 
     long long ret_int = 0;
     double ret_double = 0;
-    char ret_str[MAX_STR_LEN];
+    char ret_str[MAX_STR_LEN] = "";
     
     switch (expr.expr.arith->e_type) {
     case Add:
@@ -185,11 +185,7 @@ Expr_t evaluate_arith(Expr_t expr) {
         exit(1);
     }
 
-    ret.e_type = Constant;
-    ret.r_type = r_type;
-    ret.expr.constant = (Constant_t*) malloc(sizeof(Constant_t));
-    ret.expr.constant->e_type = Constant;
-    ret.expr.constant->r_type = r_type;
+    ret = create_expr(Constant, r_type, NULL);
     switch (r_type) {
     case Int_R:
         ret.expr.constant->i = ret_int;
@@ -198,7 +194,7 @@ Expr_t evaluate_arith(Expr_t expr) {
         ret.expr.constant->f = ret_double;
         break;
     case String_R:
-        ret.expr.constant->str = (char*) malloc(strlen(ret_str));
+        ret.expr.constant->str = (char*) malloc(strlen(ret_str)+1);
         strcpy(ret.expr.constant->str, ret_str);
         break;
     default:
@@ -234,9 +230,11 @@ Expr_t evaluate_bexpr(Expr_t expr) {
         print_expr(expr);
         exit(1);
     }
-    Constant_t *ret_c = (Constant_t*) malloc(sizeof(Constant_t));
-    *ret_c = (Constant_t) {Constant, Bool_R, {.b=0}};
-    Expr_t ret = {Constant, Bool_R, {.constant=ret_c}};
+    // Constant_t *ret_c = (Constant_t*) malloc(sizeof(Constant_t));
+    // *ret_c = (Constant_t) {Constant, Bool_R, {.b=0}};
+    // Expr_t ret = {Constant, Bool_R, {.constant=ret_c}};
+    Expr_t ret = create_expr(Constant, Bool_R, NULL);
+    Constant_t *ret_c = ret.expr.constant;
     BExpr_t *bexpr = expr.expr.bexpr;
     // char left_b, right_b;
     if (bexpr->b_type == Not) {
@@ -244,7 +242,7 @@ Expr_t evaluate_bexpr(Expr_t expr) {
         ret_c->b = (long long) (left_b == 0);
     }
     else {
-        Constant_Values *lr_vals[2];
+        Constant_Values *lr_vals[2] = {malloc(sizeof(Constant_Values)), malloc(sizeof(Constant_Values))};
         Expr_t lr_expr[2] = {evaluate_expr(bexpr->left), evaluate_expr(bexpr->right)};
         enum result_type r_type = consolidate_constant_pair(lr_expr, lr_vals);
         if (r_type == String_R) {
@@ -299,6 +297,8 @@ Expr_t evaluate_bexpr(Expr_t expr) {
             // should never happen, just here for warning suppression
             break;
         }
+        free(lr_vals[0]);
+        free(lr_vals[1]);
     }
 
     return ret;
