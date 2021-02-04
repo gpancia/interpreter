@@ -184,7 +184,7 @@ Expr_t evaluate_arith(Expr_t expr) {
         print_expr(expr);
         exit(1);
     }
-
+    
     ret = create_expr(Constant, r_type, NULL);
     switch (r_type) {
     case Int_R:
@@ -208,7 +208,7 @@ Expr_t evaluate_arith(Expr_t expr) {
 
 Expr_t evaluate_set(Expr_t expr) {
     Expr_t val = evaluate_expr(expr.expr.set->val);
-    set_val(expr.expr.set->name, &val);
+    set_val(NULL, expr.expr.set->name, &val);
     return val;
 }
 
@@ -216,7 +216,7 @@ Expr_t evaluate_id(Expr_t expr) {
     // print_env();
     Var_t *var = expr.expr.var;
     char *name = var->name;
-    Expr_t *val = get_val(name);
+    Expr_t *val = get_val(NULL, name);
     if (val == NULL) {
         fprintf(stderr, "evaluate_id: undeclared variable \"%s\"", name);
         exit(1);

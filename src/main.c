@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
         printf("\n");
     }
     printf("\n --------------DONE PARSING-------------\n");
-    init_env();
+    init_env(NULL, NULL);
     for (int i = 0; i < num_expr; i++) {
         print_expr(evaluate_expr(expr_arr[i]));
         printf("\n");
     }
-    print_env();
+    print_env(NULL);
     printf("\n");
-    free_env();
+    free_env(NULL);
     free_all_expr();
     tk_lst_free();
     return 0;
