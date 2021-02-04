@@ -84,6 +84,7 @@ typedef struct Cons_t{
     enum result_type r_type;
     Expr_t head;
     struct Cons_t *tail;
+    uint size;
 }Cons_t;
 
 typedef struct Arith_t{

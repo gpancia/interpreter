@@ -439,8 +439,6 @@ Expr_t parse_parens(Token **token_ptr)
 }
 
 
-
-// TODO: implement commas
 Expr_t parse_list(Token **token_ptr)
 {
     Token *token = *token_ptr;
@@ -504,6 +502,7 @@ Expr_t parse_list(Token **token_ptr)
                 add_ptr_to_ll(lst_expr.expr.ptr, NULL);
                 free(lst.cons);
                 // lst_expr.expr = lst_2;
+                get_cons_size(lst_expr.expr.cons);
                 return lst_expr;
             default:
                 element_end = element_end->next;
@@ -556,6 +555,7 @@ Expr_t parse_sequence(Token **token_ptr)
                 NXT_TK;
             }
             *token_ptr = token;
+            get_cons_size(seq_expr.expr.cons);
             return seq_expr;
         }
         else {
@@ -604,6 +604,23 @@ Expr_t parse_constant(Token **token_ptr)
     }
     return ret;
 }
+
+uint get_cons_size(Cons_t *cons) {
+    uint size = 0;
+    Cons_t *curr = cons;
+    while (curr != NULL) {
+        size++;
+        curr = curr->tail;
+    }
+    curr = cons;
+    uint size_0 = size;
+    while (curr != NULL) {
+        curr->size = size--;
+        curr = curr->tail;
+    }
+    return size_0;
+}
+
 
 Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
 {
