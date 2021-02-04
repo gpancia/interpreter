@@ -49,6 +49,7 @@ Env_Item * find_env_item(Env **env_ptr, char*name) {
 }
 
 Expr_t * get_val(Env *env, char *name) {
+    env = ENV_LOCAL_OR_GLOBAL(env);
     Env_Item *ei = find_env_item(&env, name);
     return (ei == NULL) ? NULL : ei->expr;
 }

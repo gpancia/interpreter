@@ -49,6 +49,7 @@ void print_expr(Expr_t expr)
     case ArgList:
     case Sequence: {
         Cons_t *curr = expr.expr.cons;
+        printf("len = %u, ", curr->size);
         if (is_null_expr(curr->head)) {
             printf("EMPTY");
             break;
