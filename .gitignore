@@ -77,6 +77,13 @@ data/lexer_token_interrupts.dat
 build/
 output/
 src/compile_commands.json
+.dir-locals.el
+
+# Source files not in src/
+*.c
+*.h
+!src/*.c
+!src/*.h
 
 # Emacs backup files
 **/\#*\#
