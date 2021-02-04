@@ -86,9 +86,17 @@ void print_expr(Expr_t expr)
             break;
         }
         break;
-    case Function:
     case FunctionDef:
-        printf("TO BE IMPLEMENTED");
+        printf("function name: %s, ", expr.expr.func_def->name);
+        printf("arg names: ");
+        print_expr(expr.expr.func_def->args);
+        printf(", application: ");
+        print_expr(expr.expr.func_def->app);
+        break;
+    case Function:
+        printf("function name: %s, ", expr.expr.func->name);
+        printf("args: ");
+        print_expr(expr.expr.func->args);
         break;
     case Generic:
     default:
