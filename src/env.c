@@ -3,15 +3,19 @@
 #include <string.h>
 #include "env.h"
 
-void init_env()
+#define ENV_LOCAL_OR_GLOBAL(e) ((e == NULL) ? &global_env : e)
+
+void init_env(Env *env)
 {
-    env_head = (Env) {NULL, NULL, NULL, NULL};
-    env_tail = &env_head;
+    env = ENV_LOCAL_OR_GLOBAL(env);
+    env->head = (Env_Item) {NULL, NULL, NULL, NULL};
+    env->tail = &env->head;
 }
 
-Expr_t* get_val(char *name)
+Expr_t* get_val(Env *env, char *name)
 {
-    Env *curr = env_head.next;
+    env = ENV_LOCAL_OR_GLOBAL(env);
+    Env_Item *curr = env->head.next;
     while (curr != NULL) {
         if (curr->expr && curr->name && !strcmp(name, curr->name)) {
             return curr->expr;
@@ -23,9 +27,10 @@ Expr_t* get_val(char *name)
     return NULL;  // found nothing
 }
 
-int set_val(char *name, Expr_t *expr)
+int set_val(Env *env, char *name, Expr_t *expr)
 {
-    Env *curr = env_head.next;
+    env = ENV_LOCAL_OR_GLOBAL(env);
+    Env_Item *curr = env->head.next;
     while (curr != NULL) {
         if (curr->name && !strcmp(curr->name, name)) {
             curr->expr = expr;
@@ -35,20 +40,21 @@ int set_val(char *name, Expr_t *expr)
             curr = curr->next;
         }
     }
-    Env *new_env = (Env *) malloc(sizeof(Env));
-    *new_env = (Env) {(char *) malloc(strlen(name)+1),
+    Env_Item *new_env = (Env_Item *) malloc(sizeof(Env_Item));
+    *new_env = (Env_Item) {(char *) malloc(strlen(name)+1),
                       (Expr_t *) malloc(sizeof(Expr_t)),
                       NULL,
                       NULL};
     strcpy(new_env->name, name);
     *new_env->expr = copy_expr(expr, &new_env->ll_loc);
-    env_tail->next = new_env;
-    env_tail = new_env;
+    env->tail->next = new_env;
+    env->tail = new_env;
     return 0;
 }
 
-void print_env() {
-    Env *curr = env_head.next;
+void print_env(Env *env) {
+    env = ENV_LOCAL_OR_GLOBAL(env);
+    Env_Item *curr = env->head.next;
     printf("Environment:\n");
     while (curr != NULL) {
         printf("\t%s: ", curr->name);
@@ -61,9 +67,10 @@ void print_env() {
     printf("\n");
 }
 
-void free_env() {
-    Env *curr = env_head.next;
-    Env *prev;
+void free_env(Env *env) {
+    env = ENV_LOCAL_OR_GLOBAL(env);
+    Env_Item *curr = env->head.next;
+    Env_Item *prev;
     while (curr != NULL) {
         if (curr->ll_loc != NULL) {
             cut_ll_expr(curr->ll_loc);
