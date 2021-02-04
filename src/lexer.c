@@ -205,7 +205,7 @@ void tk_lst_free()
         curr = curr->next;
         free(prev);
     }
-    
+    free(interrupt_list.interrupt);
 }
 
 void tk_free(Token *token)
