@@ -1,8 +1,9 @@
+#include "expr.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include "expr.h"
+#include "flags.h"
 
 int is_null_expr(Expr_t e)
 {
@@ -100,20 +101,20 @@ void print_expr(Expr_t expr)
 // Constant wrappers
 Expr_t wrap_int(long long i)
 {
-    Expr_t ret = {Constant, Int_R, {malloc(sizeof(Constant_t))}};
+    Expr_t ret = create_expr(Constant, Int_R);
     *(ret.expr.constant) = (Constant_t){Constant, Int_R, {.i=i}};
     return ret;
 }
 Expr_t wrap_flt(double f)
 {
-    Expr_t ret = {Constant, Float_R, {malloc(sizeof(Constant_t))}};
+    Expr_t ret = create_expr(Constant, Float_R);
     *(ret.expr.constant) = (Constant_t){Constant, Float_R, {.f=f}};
     // *(ret.expr.constant) = (Constant_t){Constant, Float_R, {*((long long*)&f)}};  // evil bit trick
     return ret;
 }
 Expr_t wrap_str(char *str)
 {
-    Expr_t ret = {Constant, String_R, {malloc(sizeof(Constant_t))}};
+    Expr_t ret = create_expr(Constant, String_R);
     *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char*)malloc(sizeof(char)*(1+strlen(str)))}};
     sprintf(ret.expr.constant->str, "%s", str);
     return ret;
@@ -121,7 +122,7 @@ Expr_t wrap_str(char *str)
 
 Expr_t wrap_bool(char b)
 {
-    Expr_t ret = {Constant, Bool_R, {malloc(sizeof(Constant_t))}};
+    Expr_t ret = create_expr(Constant, Bool_R);
     *(ret.expr.constant) = (Constant_t){Constant, Bool_R, {.b = b}};
     return ret;
 }
@@ -210,18 +211,49 @@ enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *l
     return r_type;
 }
 
+
+
+////// Expression creation/deletion
+
+void init_ll_expr() {
+    ll_expr_head = (LL_Expr *) malloc(sizeof(LL_Expr));
+    *ll_expr_head = (LL_Expr) {NULL, NULL, NULL};
+    ll_expr_tail = ll_expr_head;
+}
+
+Expr_t create_expr(enum expr_type e_type, enum result_type r_type) {
+    Expr_t ret = {e_type, r_type, {malloc(e_size[e_type])}};
+    ret.expr.generic->e_type = e_type;
+    ret.expr.generic->r_type = r_type;
+    add_ptr_to_ll((void *) ret.expr.generic);
+    return ret;
+}
+
+void add_ptr_to_ll(void *ptr) {
+    LL_Expr *new_ptr = (LL_Expr *) malloc(sizeof(LL_Expr));
+    *new_ptr = (LL_Expr) {NULL, ll_expr_tail, ptr};
+    ll_expr_tail->next = new_ptr;
+    ll_expr_tail = new_ptr;
+}
+
+// THE UNINITIALIZED THING HAS GOT TO BE HERE
 Expr_t copy_expr(Expr_t *expr) {
-    Expr_t new_expr;// = (Expr_t*) malloc(sizeof(Expr_t));
-    new_expr.e_type = expr->e_type;
-    new_expr.r_type = expr->r_type;
+    // Expr_t new_expr;// = (Expr_t*) malloc(sizeof(Expr_t));
+    // new_expr.e_type = expr->e_type;
+    // new_expr.r_type = expr->r_type;
+    if (expr->expr.ptr == NULL) {
+        return *expr;
+    }
+    
+    Expr_t new_expr = create_expr(expr->expr.generic->e_type, expr->expr.generic->r_type);
     switch (expr->e_type) {
     case Constant:
-        new_expr.expr.constant = (Constant_t*) malloc(sizeof(Constant_t));
+        // new_expr.expr.constant = (Constant_t *) malloc(sizeof(Constant_t));
         new_expr.expr.constant->e_type = expr->expr.constant->e_type;
         new_expr.expr.constant->r_type = expr->expr.constant->r_type;
         switch (expr->r_type) {
         case String_R:
-            new_expr.expr.constant->str = (char*) malloc(strlen(expr->expr.constant->str));
+            new_expr.expr.constant->str = (char *) malloc(strlen(expr->expr.constant->str)+1);
             strcpy(new_expr.expr.constant->str, expr->expr.constant->str);
             break;
         case Float_R:
@@ -239,17 +271,29 @@ Expr_t copy_expr(Expr_t *expr) {
     case Sequence:
     case List:
     case ArgList:
-        new_expr.expr.cons = (Cons_t*) malloc(sizeof(Cons_t));
         new_expr.expr.cons->e_type = expr->expr.cons->e_type;
         new_expr.expr.cons->r_type = expr->expr.cons->r_type;
         Cons_t *cons_read = expr->expr.cons, *cons_write = new_expr.expr.cons;
+        if (FLAGS & VERBOSE_FLAG) {
+            printf("Copying %s: %p -> %p\n", e_str[expr->e_type], cons_read, cons_write);
+        }
         while (cons_read != NULL) {
             cons_write->head = copy_expr(&cons_read->head);
+            cons_write->e_type = expr->e_type;
+            cons_write->r_type = cons_write->head.r_type;
             if (cons_read->tail != NULL) {
                 cons_write->tail = (Cons_t*) malloc(sizeof(Cons_t));
+                *cons_write->tail = *cons_read->tail;
+                cons_write->tail->tail = NULL;
+                cons_write = cons_write->tail;
+                // cons_write->tail->e_type = expr->e_type;
+                // cons_write->tail->r_type = cons_write->r_type;
+            }
+            else {
+                cons_write->tail = NULL;
             }
             cons_read = cons_read->tail;
-            cons_write = cons_write->tail;
+            // cons_write->e_type = expr->e_type;
         }
     default:
         new_expr.expr = expr->expr;
@@ -258,83 +302,109 @@ Expr_t copy_expr(Expr_t *expr) {
     return new_expr;
 }
 
+
 // Free'ing funcs
-void free_expr(Expr_t expr)
-{
-    if (expr.expr.generic == NULL)
-	return;
-    free_expr_u(expr.expr, expr.e_type);
+void free_all_expr() {
+    LL_Expr *prev, *curr = ll_expr_head->next;
+    int count = 0;
+    while (curr != NULL) {
+        prev = curr;
+        curr = curr->next;
+        enum expr_type e_type = ((Generic_t*) prev->this)->e_type;
+        free_expr_u((Expr_u){prev->this});
+        if (FLAGS & VERBOSE_FLAG) {
+            printf("freed %dth expression (%s)\n", ++count, e_str[e_type]);
+        }
+        free(prev);
+    }
+    free(ll_expr_head);
+    if (FLAGS & DEBUG_FLAG) {
+        printf("done freeing\n");
+    }
 }
 
-void free_expr_u(Expr_u expr, enum expr_type e_type)
+int cut_expr(void *ptr) {
+    LL_Expr *curr = ll_expr_head->next;
+    while (curr != NULL) {
+        if (curr->this == ptr) {
+            curr->prev->next = curr->next;
+            if (curr->next != NULL) {
+                curr->next->prev = curr->prev;
+            }
+            if (curr->this != NULL) {
+                free_expr_u((Expr_u){curr->this});
+                free(curr->this);
+            }
+            if (curr == ll_expr_tail) {
+                ll_expr_tail = ll_expr_tail->prev;
+            }
+            free(curr);
+            return 0;
+        }
+        else {
+            curr = curr->next;
+        }
+    }
+    fprintf(stderr, "expr not found in linked list\n");
+    return 1;
+}
+
+void free_expr(Expr_t expr)
 {
-    if (expr.generic == NULL || e_type == Generic)
+    free_expr_u(expr.expr);
+}
+
+// free_all_expr should handle all subexpressions here,
+// so recursion would double free things
+void free_expr_u(Expr_u expr)
+{
+    if (expr.ptr == NULL)
 	return;
 
-    else if (e_type == Set){
-	free_expr(expr.set->val);
-	if (expr.set->name != NULL)
+    enum expr_type e_type = expr.generic->e_type;
+    Cons_t *c;  // used for List/Sequence/Arglist cases
+    switch (e_type) {
+    case (Set):
+    case (Function):
+    case (FunctionDef):
+    case (Var):
+        // All of the above expr types have strings
+        // in the same location in their respective structs
+        if (expr.set->name != NULL) {
             free(expr.set->name);
-	free(expr.set);
-    }
-
-    else if (e_type == BExpr){
-	free_expr(expr.bexpr->left);
-	free_expr(expr.bexpr->right);
-	free(expr.bexpr);
-    }
-
-    else if (e_type == Conditional){
-	free_expr(expr.cond->p);
-	free_expr(expr.cond->if_true);
-	free_expr(expr.cond->if_false);
-	free(expr.cond);
-    }
-
-    else if (e_type == List || e_type == Sequence || e_type == ArgList){
-	free_expr(expr.cons->head);
-	Expr_u ex_u;
-	ex_u.cons = expr.cons->tail;
-	free_expr_u(ex_u, e_type);
-	free(expr.cons);
-    }
-
-    else if (e_type < 6){
-	free_expr(expr.arith->left);
-	free_expr(expr.arith->right);
-	free(expr.arith);
-    }
-
-    else if (e_type == FunctionDef){
-	if (expr.func_def->name != NULL)
-            free(expr.func_def->name);
-	Expr_u ex_u;
-	ex_u.cons = expr.func_def->args;
-	free_expr_u(ex_u, expr.func_def->args->e_type);
-	free_expr(expr.func_def->app);
-	free(expr.func_def);
-    }
-
-    else if (e_type == Function){
-	if (expr.func->name != NULL)
-            free(expr.func->name);
-	Expr_u ex_u;
-	ex_u.cons = expr.func->args;
-	free_expr_u(ex_u, expr.func->args->e_type);
-	free(expr.func);
-    }
-
-    else if (e_type == Var){
-	if (expr.var->name != NULL)
-            free(expr.var->name);
-	free(expr.var);
-    }
-
-    else if (e_type == Constant){
-	if (expr.constant->r_type == String_R){
-            if (expr.constant->str != NULL)
-		free(expr.constant->str);
+        }
+        break;
+    case (Constant):
+        if (expr.constant->r_type == String_R && expr.constant->str != NULL){
+            free(expr.constant->str);
 	}
-	free(expr.constant);
+        break;
+    case (List):
+    case (Sequence):
+    case (ArgList):
+        // freeing the head is uneccessary, as it will be done
+        // in free_all_expr
+        c = expr.cons->tail;
+        // if (c != NULL && c->e_type != expr.generic->e_type) {
+            // printf("wrong %p (%s)\n", c, e_str[e_type]);
+        //     fprintf(stderr, "Correcting e_type %s -> %s\n",
+        //             e_str[c->e_type], e_str[expr.generic->e_type]);
+        //     c->e_type = expr.generic->e_type;
+        // }
+	free_expr_u((Expr_u) {.cons = c});
+        break;
+        
+    // not using default here in case I'm missing something
+    case (Add):
+    case (Sub):
+    case (Div):
+    case (Mul):
+    case (Concat):
+    case (BExpr):
+    case (Conditional):
+        break;
+    default:
+        fprintf(stderr, "unable to free expression of type %s\n", e_str[expr.generic->e_type]);
     }
+    free(expr.generic);
 }

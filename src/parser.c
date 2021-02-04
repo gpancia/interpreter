@@ -172,23 +172,24 @@ Expr_t parse_expr(Token **token_ptr)
 // TODO: disable undeclared vars
 Expr_t parse_id(Token** token_ptr)
 {
-    Expr_u expr;
+    Expr_t ret;
     Token *token = *token_ptr;
     char *name = token->val;
     NXT_TK;
     if (token != NULL && token->tk == OBracket){
+        ret = create_expr(Function, Undef_R);
         Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_list(&token).expr.cons};
         strcpy(fun.name, name);
-        expr.func = malloc(sizeof(Fun_t));
-        *(expr.func) = fun;
+        // expr.func = malloc(sizeof(Fun_t));
+        *(ret.expr.func) = fun;
     }
     else {
+        ret = create_expr(Var, Undef_R);
         Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name)))};
         strcpy(var.name, name);
-        expr.func = malloc(sizeof(Var_t));
-        *(expr.var) = var;
+        *(ret.expr.var) = var;
     }
-    return (Expr_t){expr.generic->e_type, expr.generic->r_type, expr};
+    return ret;
 }
 
 
@@ -206,7 +207,7 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
                     file_name, line_number, e.r_type);
             exit(1);
         }
-        ret = (Expr_t){Sub, e.r_type, {malloc(sizeof(Arith_t))}};
+        ret = create_expr(Sub, e.r_type);
         *(ret.expr.arith) = (Arith_t){Sub, e.r_type, ZERO_CONSTANT, e};
     }
     else if (seq(op, "!")){
@@ -215,7 +216,7 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
                     file_name, line_number, e.r_type);
             exit(1);
         }
-        ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
+        ret = create_expr(BExpr, Bool_R);
         BExpr_t not_expr = {BExpr, Not, e, NULL_EXPR};
         *(ret.expr.bexpr) = not_expr;
     }
@@ -227,23 +228,23 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
     Expr_t ret = NULL_EXPR;
     if (seq(op, "+")){
         if (left.r_type == String_R || right.r_type == String_R){
-            ret = (Expr_t){Concat, String_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Concat, String_R);
             *(ret.expr.arith) = (Arith_t){Concat, String_R, left, right};
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = (Expr_t){Add, Float_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Add, Float_R);
             *(ret.expr.arith) = (Arith_t){Add, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = (Expr_t){Add, Int_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Add, Int_R);
             *(ret.expr.arith) = (Arith_t){Add, Int_R, left, right};
         }
         else if (left.r_type == Bool_R || right.r_type == Bool_R){
-            ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
+            ret = create_expr(BExpr, Bool_R);
             *(ret.expr.bexpr) = (BExpr_t){BExpr, Or, left, right};
         }
         else {
-            ret = (Expr_t){Add, Undef_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Add, Undef_R);
             *(ret.expr.arith) = (Arith_t){Add, Undef_R, left, right};
         }
     }
@@ -253,15 +254,15 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = (Expr_t){Sub, Float_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Sub, Float_R);
             *(ret.expr.arith) = (Arith_t){Sub, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = (Expr_t){Sub, Int_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Sub, Int_R);
             *(ret.expr.arith) = (Arith_t){Sub, Int_R, left, right};
         }
         else {
-            ret = (Expr_t){Sub, Undef_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Sub, Undef_R);
             *(ret.expr.arith) = (Arith_t){Sub, Undef_R, left, right};
         }
     }
@@ -271,19 +272,19 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = (Expr_t){Mul, Float_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Mul, Float_R);
             *(ret.expr.arith) = (Arith_t){Mul, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = (Expr_t){Mul, Int_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Mul, Int_R);
             *(ret.expr.arith) = (Arith_t){Mul, Int_R, left, right};
         }
         else if (left.r_type == Bool_R || right.r_type == Bool_R){
-            ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
+            ret = create_expr(BExpr, Bool_R);
             *(ret.expr.bexpr) = (BExpr_t){BExpr, And, left, right};
         }
         else {
-            ret = (Expr_t){Mul, Undef_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Mul, Undef_R);
             *(ret.expr.arith) = (Arith_t){Mul, Undef_R, left, right};
         }
     }
@@ -293,15 +294,15 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = (Expr_t){Div, Float_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Div, Float_R);
             *(ret.expr.arith) = (Arith_t){Div, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = (Expr_t){Div, Int_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Div, Int_R);
             *(ret.expr.arith) = (Arith_t){Div, Int_R, left, right};
         }
         else {
-            ret = (Expr_t){Div, Undef_R, {malloc(sizeof(Arith_t))}};
+            ret = create_expr(Div, Undef_R);
             *(ret.expr.arith) = (Arith_t){Div, Undef_R, left, right};
         }
     }
@@ -318,7 +319,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
         char *bops[Or+1] = {"==","!=",">=","<=",">","<","!","&&","||"};
         for (int i = 0; i <= Or && !found; i++){
             if (seq(op, bops[i])){
-                ret = (Expr_t){BExpr, Bool_R, {malloc(sizeof(BExpr_t))}};
+                ret = create_expr(BExpr, Bool_R);
                 *(ret.expr.bexpr) = (BExpr_t){BExpr, i, left, right};
                 found = 1;
                 break;
@@ -358,7 +359,7 @@ Expr_t parse_set_var(Token **token_ptr)
     Expr_t val = parse_expr(&token);
     Set_t set = {Set, val.r_type, malloc(sizeof(char)*(1+strlen(name))), val};
     strcpy(set.name, name);
-    Expr_t ret = {Set, set.r_type, {malloc(sizeof(Set_t))}};
+    Expr_t ret = create_expr(Set, set.r_type);
     *(ret.expr.set) = set;
     *token_ptr = token;
     return ret;
@@ -382,7 +383,7 @@ Expr_t parse_set_func(Token **token_ptr)
     }
     FunDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args, app};
     strcpy(fun.name, name);
-    Expr_t expr = {FunctionDef, fun.r_type, {malloc(sizeof(FunDef_t))}};
+    Expr_t expr = create_expr(FunctionDef, fun.r_type);
     *(expr.expr.func_def) = fun;
     *token_ptr = token;
     return expr;
@@ -423,10 +424,7 @@ Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_
         PERR_FL("error: type mismatch between cases");
     }
     Cond_t cond = {Conditional, if_false.r_type, predicate, if_true, if_false};
-    Expr_t ret;
-    ret.e_type = Conditional;
-    ret.r_type = cond.r_type;
-    ret.expr.cond = malloc(sizeof(Cond_t));
+    Expr_t ret = create_expr(Conditional, cond.r_type);
     *(ret.expr.cond) = cond;
     return ret;
 }
@@ -472,37 +470,12 @@ Expr_t parse_list(Token **token_ptr)
     }
     NXT_TK;
 
-    // Expr_u lst;
-    // cons->e_type = Generic;
-    // cons->r_type = Undef_R;
-    // cons->head = NULL_EXPR;
-    // cons->tail = malloc(sizeof(Cons_t));
-    // lst.cons = cons->tail;
-    // cons->tail->head = NULL_EXPR;
-    // cons->tail->tail = NULL;
-    // Cons_t cons = {Generic, Undef_R, NULL_EXPR, malloc(sizeof(Cons_t))};
-    // lst.cons = cons.tail;
-    // cons.tail->head = NULL_EXPR;
-    // cons.tail->tail = NULL;
-    // Cons_t *curr = &cons;
-    // Expr_t lst_expr = {List, Undef_R, {malloc(sizeof(Expr_u))}};
-
-    Expr_u lst;
-    lst.cons = malloc(sizeof(Cons_t));
-    lst.cons->e_type = Undef_R;
+    Expr_u lst = {.cons = malloc(sizeof(Cons_t))};
     Expr_t lst_expr = {List, Undef_R, lst};
     Cons_t *curr = lst.cons;
-    
-    // // Since every time a new element is found new memory is malloc'd, to avoid
-    // // having an empty head at the beginning of the list, this if/else statement
-    // // is necessary before the while loop
-    // if (token->tk == CBracket) {
-    //     curr->head = NULL_EXPR;
-    // }
-    // else {
-    //     if (token->tk == Newline) { NXT_TK; }
-    //     curr->head = parse_expr(&token);
-    // }
+    curr->e_type = List;
+    curr->r_type = Undef_R;
+
     Token *element_end;
     Token *temp;
     while (token != NULL){
@@ -542,12 +515,10 @@ Expr_t parse_list(Token **token_ptr)
                 }
                 curr->tail = NULL;
                 lst_expr.r_type = curr->head.r_type;
-                Cons_t *null_head = lst.cons;
-                Expr_u lst_2;
-                lst_2.cons = lst.cons->tail;
-                lst.cons = lst.cons->tail;
-                free(null_head);
-                lst_expr.expr = lst_2;
+                lst_expr.expr.cons = lst.cons->tail;
+                add_ptr_to_ll(lst_expr.expr.ptr);
+                free(lst.cons);
+                // lst_expr.expr = lst_2;
                 return lst_expr;
             default:
                 element_end = element_end->next;
@@ -571,12 +542,9 @@ Expr_t parse_sequence(Token **token_ptr)
         PERR_FL("trailing '{'");
     }
     NXT_TK;
-
-  
-    Expr_u seq;
-    seq.cons = malloc(sizeof(Cons_t));
-    seq.cons->e_type = Sequence;
-    Expr_t seq_expr = {Sequence, Undef_R, seq};
+    
+    Expr_t seq_expr = create_expr(Sequence, Undef_R);
+    Expr_u seq = seq_expr.expr;
     Cons_t *curr = seq.cons;
   
     // Since every time a new element is found new memory is malloc'd, to avoid
@@ -588,6 +556,8 @@ Expr_t parse_sequence(Token **token_ptr)
     else {
         if (token->tk == Newline) { NXT_TK; }
         curr->head = parse_expr(&token);
+        curr->e_type = Sequence;
+        curr->r_type = curr->head.r_type;
     }
     while (token != NULL){
         if (token->tk == Newline) {  // ignore newlines within code block
@@ -607,6 +577,8 @@ Expr_t parse_sequence(Token **token_ptr)
             curr->tail = malloc(sizeof(Cons_t));
             curr = curr->tail;
             curr->head = parse_expr(&token);
+            curr->e_type = Sequence;
+            curr->r_type = curr->head.r_type;
         }
     }
     PERR_FL("missing '}'");

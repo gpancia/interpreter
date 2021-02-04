@@ -45,10 +45,10 @@ int set_val(char *name, Expr_t *expr)
             curr = curr->next;
         }
     }
-    Env *new_env = (Env*) malloc(sizeof(Env));
-    new_env->name = (char*) malloc(strlen(name));
+    Env *new_env = (Env *) malloc(sizeof(Env));
+    new_env->name = (char *) malloc(strlen(name)+1);
     strcpy(new_env->name, name);
-    new_env->expr = (Expr_t*) malloc(sizeof(Expr_t));
+    new_env->expr = (Expr_t *) malloc(sizeof(Expr_t));
     *new_env->expr = copy_expr(expr);
     new_env->next = NULL;
     env_tail->next = new_env;

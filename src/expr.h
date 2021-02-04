@@ -1,11 +1,12 @@
 #ifndef __EXPR_H__
 #define __EXPR_H__
 
+#include <stdlib.h>
+
 #define NULL_EXPR (Expr_t){Generic, Undef_R, {NULL}}
 #define MAX_STR_LEN 500
 
-enum expr_type {Add = 0, Sub = 1, Mul = 2, Div = 3,
-                Concat = 4,
+enum expr_type {Add = 0, Sub = 1, Mul = 2, Div = 3, Concat = 4,
                 Generic,
                 Set,
                 BExpr,
@@ -26,7 +27,11 @@ extern char *e_str[];
 extern char *r_str[];
 extern char *b_str[];
 
+// expr memory size array
+extern size_t e_size[];
+
 typedef union Expr_u{
+    void *ptr;
     struct Expr_t *expr; 
     struct Generic_t *generic; // Generic (should only be used for NULL_EXPR)
     struct Set_t *set; // Set
@@ -49,8 +54,7 @@ typedef struct Expr_t{
 typedef struct Generic_t{
     enum expr_type e_type;
     enum result_type r_type;
-    unsigned long left;
-    unsigned long right;
+    void *ptr;
 }Generic_t;
 
 typedef struct Set_t{
@@ -141,10 +145,25 @@ typedef struct Constant_Values {
 // consolidates the types of the constant pair in priority order String -> Float -> Int -> Bool
 enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *lr_vals[2]);
 
-Expr_t copy_expr(Expr_t*);
+// Linked list of all created Expr_u pointers for freeing purposes
+typedef struct LL_Expr {
+    struct LL_Expr *next, *prev;
+    void *this;
+}LL_Expr;
 
+LL_Expr *ll_expr_head;
+LL_Expr *ll_expr_tail;
+
+void init_ll_expr();
+
+Expr_t create_expr(enum expr_type, enum result_type);
+void add_ptr_to_ll(void *ptr);
+Expr_t copy_expr(Expr_t *);
+
+void free_all_expr();
+int cut_expr(void *ptr);  // return 1 if expr not found in list
 void free_expr(Expr_t);
-void free_expr_u(Expr_u, enum expr_type);
+void free_expr_u(Expr_u);
 
 #define ZERO_CONSTANT wrap_int(0)
 
