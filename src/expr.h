@@ -147,8 +147,9 @@ enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *l
 
 // Linked list of all created Expr_u pointers for freeing purposes
 typedef struct LL_Expr {
-    struct LL_Expr *next, *prev;
+    struct LL_Expr *prev, *next;
     void *this;
+    struct LL_Expr **loc;  // used in env
 }LL_Expr;
 
 LL_Expr *ll_expr_head;
@@ -156,12 +157,15 @@ LL_Expr *ll_expr_tail;
 
 void init_ll_expr();
 
-Expr_t create_expr(enum expr_type, enum result_type);
-void add_ptr_to_ll(void *ptr);
-Expr_t copy_expr(Expr_t *);
+// *loc is the pointer to the LL_Expr struct which is set if loc != NULL
+Expr_t create_expr(enum expr_type, enum result_type, LL_Expr **loc);
+void add_ptr_to_ll(void *ptr, LL_Expr **loc);
+Expr_t copy_expr(Expr_t *expr, LL_Expr **loc);
 
-void free_all_expr();
 int cut_expr(void *ptr);  // return 1 if expr not found in list
+void cut_ll_expr(LL_Expr *loc);  // cut_expr if LL_Expr address is known
+void free_all_expr();
+void free_ll_expr(LL_Expr *ll_expr);
 void free_expr(Expr_t);
 void free_expr_u(Expr_u);
 

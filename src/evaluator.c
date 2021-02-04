@@ -185,7 +185,7 @@ Expr_t evaluate_arith(Expr_t expr) {
         exit(1);
     }
 
-    ret = create_expr(Constant, r_type);
+    ret = create_expr(Constant, r_type, NULL);
     switch (r_type) {
     case Int_R:
         ret.expr.constant->i = ret_int;
@@ -233,7 +233,7 @@ Expr_t evaluate_bexpr(Expr_t expr) {
     // Constant_t *ret_c = (Constant_t*) malloc(sizeof(Constant_t));
     // *ret_c = (Constant_t) {Constant, Bool_R, {.b=0}};
     // Expr_t ret = {Constant, Bool_R, {.constant=ret_c}};
-    Expr_t ret = create_expr(Constant, Bool_R);
+    Expr_t ret = create_expr(Constant, Bool_R, NULL);
     Constant_t *ret_c = ret.expr.constant;
     BExpr_t *bexpr = expr.expr.bexpr;
     // char left_b, right_b;

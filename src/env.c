@@ -5,9 +5,7 @@
 
 void init_env()
 {
-    env_head.name = NULL;
-    env_head.expr = NULL;
-    env_head.next = NULL;
+    env_head = (Env) {NULL, NULL, NULL, NULL};
     env_tail = &env_head;
 }
 
@@ -38,11 +36,12 @@ int set_val(char *name, Expr_t *expr)
         }
     }
     Env *new_env = (Env *) malloc(sizeof(Env));
-    new_env->name = (char *) malloc(strlen(name)+1);
+    *new_env = (Env) {(char *) malloc(strlen(name)+1),
+                      (Expr_t *) malloc(sizeof(Expr_t)),
+                      NULL,
+                      NULL};
     strcpy(new_env->name, name);
-    new_env->expr = (Expr_t *) malloc(sizeof(Expr_t));
-    *new_env->expr = copy_expr(expr);
-    new_env->next = NULL;
+    *new_env->expr = copy_expr(expr, &new_env->ll_loc);
     env_tail->next = new_env;
     env_tail = new_env;
     return 0;
@@ -60,4 +59,23 @@ void print_env() {
         curr = curr->next;
     }
     printf("\n");
+}
+
+void free_env() {
+    Env *curr = env_head.next;
+    Env *prev;
+    while (curr != NULL) {
+        if (curr->ll_loc != NULL) {
+            cut_ll_expr(curr->ll_loc);
+        }
+        if (curr->name != NULL) {
+            free(curr->name);
+        }
+        if (curr->expr != NULL) {
+            free(curr->expr);
+        }
+        prev = curr;
+        curr = curr->next;
+        free(prev);
+    }
 }

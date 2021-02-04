@@ -101,20 +101,20 @@ void print_expr(Expr_t expr)
 // Constant wrappers
 Expr_t wrap_int(long long i)
 {
-    Expr_t ret = create_expr(Constant, Int_R);
+    Expr_t ret = create_expr(Constant, Int_R, NULL);
     *(ret.expr.constant) = (Constant_t){Constant, Int_R, {.i=i}};
     return ret;
 }
 Expr_t wrap_flt(double f)
 {
-    Expr_t ret = create_expr(Constant, Float_R);
+    Expr_t ret = create_expr(Constant, Float_R, NULL);
     *(ret.expr.constant) = (Constant_t){Constant, Float_R, {.f=f}};
     // *(ret.expr.constant) = (Constant_t){Constant, Float_R, {*((long long*)&f)}};  // evil bit trick
     return ret;
 }
 Expr_t wrap_str(char *str)
 {
-    Expr_t ret = create_expr(Constant, String_R);
+    Expr_t ret = create_expr(Constant, String_R, NULL);
     *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char*)malloc(sizeof(char)*(1+strlen(str)))}};
     sprintf(ret.expr.constant->str, "%s", str);
     return ret;
@@ -122,7 +122,7 @@ Expr_t wrap_str(char *str)
 
 Expr_t wrap_bool(char b)
 {
-    Expr_t ret = create_expr(Constant, Bool_R);
+    Expr_t ret = create_expr(Constant, Bool_R, NULL);
     *(ret.expr.constant) = (Constant_t){Constant, Bool_R, {.b = b}};
     return ret;
 }
@@ -215,31 +215,35 @@ enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *l
 
 void init_ll_expr() {
     ll_expr_head = (LL_Expr *) malloc(sizeof(LL_Expr));
-    *ll_expr_head = (LL_Expr) {NULL, NULL, NULL};
+    *ll_expr_head = (LL_Expr) {NULL, NULL, NULL, NULL};
     ll_expr_tail = ll_expr_head;
 }
 
-Expr_t create_expr(enum expr_type e_type, enum result_type r_type) {
+Expr_t create_expr(enum expr_type e_type, enum result_type r_type, LL_Expr **loc) {
     Expr_t ret = {e_type, r_type, {malloc(e_size[e_type])}};
     ret.expr.generic->e_type = e_type;
     ret.expr.generic->r_type = r_type;
-    add_ptr_to_ll((void *) ret.expr.generic);
+    add_ptr_to_ll((void *) ret.expr.generic, loc);
     return ret;
 }
 
-void add_ptr_to_ll(void *ptr) {
+void add_ptr_to_ll(void *ptr, LL_Expr **loc) {
     LL_Expr *new_ptr = (LL_Expr *) malloc(sizeof(LL_Expr));
-    *new_ptr = (LL_Expr) {NULL, ll_expr_tail, ptr};
+    *new_ptr = (LL_Expr) {ll_expr_tail, NULL, ptr, loc};
     ll_expr_tail->next = new_ptr;
     ll_expr_tail = new_ptr;
+
+    if (loc != NULL) {
+        *loc = new_ptr;
+    }
 }
 
-Expr_t copy_expr(Expr_t *expr) {
+Expr_t copy_expr(Expr_t *expr, LL_Expr **loc) {
     if (expr->expr.ptr == NULL) {
         return *expr;
     }
     
-    Expr_t new_expr = create_expr(expr->expr.generic->e_type, expr->expr.generic->r_type);
+    Expr_t new_expr = create_expr(expr->expr.generic->e_type, expr->expr.generic->r_type, loc);
     switch (expr->e_type) {
     case Constant:
         new_expr.expr.constant->e_type = expr->expr.constant->e_type;
@@ -271,7 +275,7 @@ Expr_t copy_expr(Expr_t *expr) {
             printf("Copying %s: %p -> %p\n", e_str[expr->e_type], cons_read, cons_write);
         }
         while (cons_read != NULL) {
-            cons_write->head = copy_expr(&cons_read->head);
+            cons_write->head = copy_expr(&cons_read->head, NULL);  // don't propagate loc
             cons_write->e_type = expr->e_type;
             cons_write->r_type = cons_write->head.r_type;
             if (cons_read->tail != NULL) {
@@ -294,41 +298,11 @@ Expr_t copy_expr(Expr_t *expr) {
 
 
 // Free'ing funcs
-void free_all_expr() {
-    LL_Expr *prev, *curr = ll_expr_head->next;
-    int count = 0;
-    while (curr != NULL) {
-        prev = curr;
-        curr = curr->next;
-        enum expr_type e_type = ((Generic_t*) prev->this)->e_type;
-        free_expr_u((Expr_u){prev->this});
-        if (FLAGS & VERBOSE_FLAG) {
-            printf("freed %dth expression (%s)\n", ++count, e_str[e_type]);
-        }
-        free(prev);
-    }
-    free(ll_expr_head);
-    if (FLAGS & DEBUG_FLAG) {
-        printf("done freeing\n");
-    }
-}
-
 int cut_expr(void *ptr) {
     LL_Expr *curr = ll_expr_head->next;
     while (curr != NULL) {
         if (curr->this == ptr) {
-            curr->prev->next = curr->next;
-            if (curr->next != NULL) {
-                curr->next->prev = curr->prev;
-            }
-            if (curr->this != NULL) {
-                free_expr_u((Expr_u){curr->this});
-                free(curr->this);
-            }
-            if (curr == ll_expr_tail) {
-                ll_expr_tail = ll_expr_tail->prev;
-            }
-            free(curr);
+            cut_ll_expr(curr);
             return 0;
         }
         else {
@@ -337,6 +311,46 @@ int cut_expr(void *ptr) {
     }
     fprintf(stderr, "expr not found in linked list\n");
     return 1;
+}
+
+void cut_ll_expr(LL_Expr *loc) {
+    if (loc != NULL) {
+        if (loc->prev != NULL) {
+            loc->prev->next = loc->next;
+        }
+        if (loc->next != NULL) {
+            loc->next->prev = loc->prev;
+        }
+        if (loc == ll_expr_tail) {
+            ll_expr_tail = ll_expr_tail->prev;
+        }
+        free_ll_expr(loc);
+    }
+}
+
+void free_all_expr() {
+    LL_Expr *prev, *curr = ll_expr_head->next;
+    while (curr != NULL) {
+        prev = curr;
+        curr = curr->next;
+        free_ll_expr(prev);
+    }
+    free(ll_expr_head);
+    if (FLAGS & DEBUG_FLAG) {
+        printf("done freeing\n");
+    }
+}
+
+void free_ll_expr(LL_Expr *ll_expr) {
+    if (ll_expr != NULL) {
+        if (ll_expr->this != NULL) {
+            free_expr_u((Expr_u) {.ptr = ll_expr->this});
+        }
+        if (ll_expr->loc != NULL) {
+            *ll_expr->loc = NULL;
+        }
+        free(ll_expr);
+    }
 }
 
 void free_expr(Expr_t expr)
