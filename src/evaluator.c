@@ -242,7 +242,7 @@ Expr_t evaluate_bexpr(Expr_t expr) {
         ret_c->b = (long long) (left_b == 0);
     }
     else {
-        Constant_Values *lr_vals[2];
+        Constant_Values *lr_vals[2] = {malloc(sizeof(Constant_Values)), malloc(sizeof(Constant_Values))};
         Expr_t lr_expr[2] = {evaluate_expr(bexpr->left), evaluate_expr(bexpr->right)};
         enum result_type r_type = consolidate_constant_pair(lr_expr, lr_vals);
         if (r_type == String_R) {
@@ -297,6 +297,8 @@ Expr_t evaluate_bexpr(Expr_t expr) {
             // should never happen, just here for warning suppression
             break;
         }
+        free(lr_vals[0]);
+        free(lr_vals[1]);
     }
 
     return ret;

@@ -129,8 +129,6 @@ Expr_t wrap_bool(char b)
 
 enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *lr_vals[2]) {
     enum result_type r_type;
-    lr_vals[0] = (Constant_Values*) malloc(sizeof(Constant_Values));
-    lr_vals[1] = (Constant_Values*) malloc(sizeof(Constant_Values));
     *lr_vals[0] = (Constant_Values){0, 0.0, "", 0};
     *lr_vals[1] = (Constant_Values){0, 0.0, "", 0};
     for (int i = 0; i < 2; i++) {
