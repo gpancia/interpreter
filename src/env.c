@@ -30,14 +30,6 @@ int set_val(char *name, Expr_t *expr)
     Env *curr = env_head.next;
     while (curr != NULL) {
         if (curr->name && !strcmp(curr->name, name)) {
-            // if (curr->expr->r_type != expr->r_type) {
-            //     fprintf(stderr, "Unable to assign value of type %s to variable \"%s\" of type %s",
-            //             r_str[curr->expr->r_type], name, r_str[expr->r_type]);
-            //     exit(1);
-            // }
-            // else {
-                
-            // }
             curr->expr = expr;
             return 0;
         }

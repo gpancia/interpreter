@@ -180,7 +180,6 @@ Expr_t parse_id(Token** token_ptr)
         ret = create_expr(Function, Undef_R);
         Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_list(&token).expr.cons};
         strcpy(fun.name, name);
-        // expr.func = malloc(sizeof(Fun_t));
         *(ret.expr.func) = fun;
     }
     else {
@@ -306,14 +305,6 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             *(ret.expr.arith) = (Arith_t){Div, Undef_R, left, right};
         }
     }
-    // Shouldn't ever happen
-    /* else if (seq(op, "=")){ */
-    /*   if (left.e_type != Id){ */
-    /*     fprintf(stderr, "%s:%d: error: cannot use expression of type %d as variable name\n", file_name, line_number, left.e_type); */
-    /*     exit(1); */
-    /*   } */
-    /*   // check if id is function dec (has parens) */
-    /* } */
     else {
         char found = 0;
         char *bops[Or+1] = {"==","!=",">=","<=",">","<","!","&&","||"};
@@ -443,12 +434,6 @@ Expr_t parse_parens(Token **token_ptr)
     free(start->prev);
     start->prev = NULL;
     end->next = NULL;
-    
-    /* 
-    if (end->next->next != token) {
-       fprintf(stderr, "parse_parens: mismatch between end->next->next (%s) and token (%s)\n", t_str[end->next->next->tk], t_str[token->tk]);
-    }
-    */
     end->next = NULL;
     return parse_expr(&start);
 }
@@ -629,9 +614,6 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
     if (token->tk != open){
         PERR_FL("token type and open don't match");
     }
-    /* if (token->next->tk == close) { 
-       last = token;  // save last token to not equal close 
-       } */
     NXT_TK;
     int nested = 1;
     enum token_type tk;
@@ -642,10 +624,6 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
         }
         else if (tk == close){
             if (--nested == 0){
-                /* if (token->next && token->next->tk != Newline) { */
-                    /* push_tk_line(token->next); */
-                /* } */
-                /* NXT_TK; */
                 *token_ptr = token;
                 return token;
             }

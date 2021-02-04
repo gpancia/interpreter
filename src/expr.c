@@ -236,11 +236,7 @@ void add_ptr_to_ll(void *ptr) {
     ll_expr_tail = new_ptr;
 }
 
-// THE UNINITIALIZED THING HAS GOT TO BE HERE
 Expr_t copy_expr(Expr_t *expr) {
-    // Expr_t new_expr;// = (Expr_t*) malloc(sizeof(Expr_t));
-    // new_expr.e_type = expr->e_type;
-    // new_expr.r_type = expr->r_type;
     if (expr->expr.ptr == NULL) {
         return *expr;
     }
@@ -248,7 +244,6 @@ Expr_t copy_expr(Expr_t *expr) {
     Expr_t new_expr = create_expr(expr->expr.generic->e_type, expr->expr.generic->r_type);
     switch (expr->e_type) {
     case Constant:
-        // new_expr.expr.constant = (Constant_t *) malloc(sizeof(Constant_t));
         new_expr.expr.constant->e_type = expr->expr.constant->e_type;
         new_expr.expr.constant->r_type = expr->expr.constant->r_type;
         switch (expr->r_type) {
@@ -286,14 +281,11 @@ Expr_t copy_expr(Expr_t *expr) {
                 *cons_write->tail = *cons_read->tail;
                 cons_write->tail->tail = NULL;
                 cons_write = cons_write->tail;
-                // cons_write->tail->e_type = expr->e_type;
-                // cons_write->tail->r_type = cons_write->r_type;
             }
             else {
                 cons_write->tail = NULL;
             }
             cons_read = cons_read->tail;
-            // cons_write->e_type = expr->e_type;
         }
     default:
         new_expr.expr = expr->expr;
@@ -362,7 +354,6 @@ void free_expr_u(Expr_u expr)
 	return;
 
     enum expr_type e_type = expr.generic->e_type;
-    Cons_t *c;  // used for List/Sequence/Arglist cases
     switch (e_type) {
     case (Set):
     case (Function):
@@ -384,14 +375,7 @@ void free_expr_u(Expr_u expr)
     case (ArgList):
         // freeing the head is uneccessary, as it will be done
         // in free_all_expr
-        c = expr.cons->tail;
-        // if (c != NULL && c->e_type != expr.generic->e_type) {
-            // printf("wrong %p (%s)\n", c, e_str[e_type]);
-        //     fprintf(stderr, "Correcting e_type %s -> %s\n",
-        //             e_str[c->e_type], e_str[expr.generic->e_type]);
-        //     c->e_type = expr.generic->e_type;
-        // }
-	free_expr_u((Expr_u) {.cons = c});
+	free_expr_u((Expr_u) {.cons = expr.cons->tail});
         break;
         
     // not using default here in case I'm missing something
