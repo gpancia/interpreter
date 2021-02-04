@@ -64,5 +64,6 @@ int main(int argc, char *argv[])
     print_env();
     printf("\n");
     free_all_expr();
+    tk_lst_free();
     return 0;
 }

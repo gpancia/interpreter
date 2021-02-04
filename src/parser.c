@@ -177,13 +177,13 @@ Expr_t parse_id(Token** token_ptr)
     char *name = token->val;
     NXT_TK;
     if (token != NULL && token->tk == OBracket){
-        ret = create_expr(Function, Undef_R);
+        ret = create_expr(Function, Undef_R, NULL);
         Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_list(&token).expr.cons};
         strcpy(fun.name, name);
         *(ret.expr.func) = fun;
     }
     else {
-        ret = create_expr(Var, Undef_R);
+        ret = create_expr(Var, Undef_R, NULL);
         Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name)))};
         strcpy(var.name, name);
         *(ret.expr.var) = var;
@@ -206,7 +206,7 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
                     file_name, line_number, e.r_type);
             exit(1);
         }
-        ret = create_expr(Sub, e.r_type);
+        ret = create_expr(Sub, e.r_type, NULL);
         *(ret.expr.arith) = (Arith_t){Sub, e.r_type, ZERO_CONSTANT, e};
     }
     else if (seq(op, "!")){
@@ -215,7 +215,7 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
                     file_name, line_number, e.r_type);
             exit(1);
         }
-        ret = create_expr(BExpr, Bool_R);
+        ret = create_expr(BExpr, Bool_R, NULL);
         BExpr_t not_expr = {BExpr, Not, e, NULL_EXPR};
         *(ret.expr.bexpr) = not_expr;
     }
@@ -227,23 +227,23 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
     Expr_t ret = NULL_EXPR;
     if (seq(op, "+")){
         if (left.r_type == String_R || right.r_type == String_R){
-            ret = create_expr(Concat, String_R);
+            ret = create_expr(Concat, String_R, NULL);
             *(ret.expr.arith) = (Arith_t){Concat, String_R, left, right};
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = create_expr(Add, Float_R);
+            ret = create_expr(Add, Float_R, NULL);
             *(ret.expr.arith) = (Arith_t){Add, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = create_expr(Add, Int_R);
+            ret = create_expr(Add, Int_R, NULL);
             *(ret.expr.arith) = (Arith_t){Add, Int_R, left, right};
         }
         else if (left.r_type == Bool_R || right.r_type == Bool_R){
-            ret = create_expr(BExpr, Bool_R);
+            ret = create_expr(BExpr, Bool_R, NULL);
             *(ret.expr.bexpr) = (BExpr_t){BExpr, Or, left, right};
         }
         else {
-            ret = create_expr(Add, Undef_R);
+            ret = create_expr(Add, Undef_R, NULL);
             *(ret.expr.arith) = (Arith_t){Add, Undef_R, left, right};
         }
     }
@@ -253,15 +253,15 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = create_expr(Sub, Float_R);
+            ret = create_expr(Sub, Float_R, NULL);
             *(ret.expr.arith) = (Arith_t){Sub, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = create_expr(Sub, Int_R);
+            ret = create_expr(Sub, Int_R, NULL);
             *(ret.expr.arith) = (Arith_t){Sub, Int_R, left, right};
         }
         else {
-            ret = create_expr(Sub, Undef_R);
+            ret = create_expr(Sub, Undef_R, NULL);
             *(ret.expr.arith) = (Arith_t){Sub, Undef_R, left, right};
         }
     }
@@ -271,19 +271,19 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = create_expr(Mul, Float_R);
+            ret = create_expr(Mul, Float_R, NULL);
             *(ret.expr.arith) = (Arith_t){Mul, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = create_expr(Mul, Int_R);
+            ret = create_expr(Mul, Int_R, NULL);
             *(ret.expr.arith) = (Arith_t){Mul, Int_R, left, right};
         }
         else if (left.r_type == Bool_R || right.r_type == Bool_R){
-            ret = create_expr(BExpr, Bool_R);
+            ret = create_expr(BExpr, Bool_R, NULL);
             *(ret.expr.bexpr) = (BExpr_t){BExpr, And, left, right};
         }
         else {
-            ret = create_expr(Mul, Undef_R);
+            ret = create_expr(Mul, Undef_R, NULL);
             *(ret.expr.arith) = (Arith_t){Mul, Undef_R, left, right};
         }
     }
@@ -293,15 +293,15 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
             exit(1);
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
-            ret = create_expr(Div, Float_R);
+            ret = create_expr(Div, Float_R, NULL);
             *(ret.expr.arith) = (Arith_t){Div, Float_R, left, right};
         }
         else if (left.r_type == Int_R || right.r_type == Int_R){
-            ret = create_expr(Div, Int_R);
+            ret = create_expr(Div, Int_R, NULL);
             *(ret.expr.arith) = (Arith_t){Div, Int_R, left, right};
         }
         else {
-            ret = create_expr(Div, Undef_R);
+            ret = create_expr(Div, Undef_R, NULL);
             *(ret.expr.arith) = (Arith_t){Div, Undef_R, left, right};
         }
     }
@@ -310,7 +310,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
         char *bops[Or+1] = {"==","!=",">=","<=",">","<","!","&&","||"};
         for (int i = 0; i <= Or && !found; i++){
             if (seq(op, bops[i])){
-                ret = create_expr(BExpr, Bool_R);
+                ret = create_expr(BExpr, Bool_R, NULL);
                 *(ret.expr.bexpr) = (BExpr_t){BExpr, i, left, right};
                 found = 1;
                 break;
@@ -350,7 +350,7 @@ Expr_t parse_set_var(Token **token_ptr)
     Expr_t val = parse_expr(&token);
     Set_t set = {Set, val.r_type, malloc(sizeof(char)*(1+strlen(name))), val};
     strcpy(set.name, name);
-    Expr_t ret = create_expr(Set, set.r_type);
+    Expr_t ret = create_expr(Set, set.r_type, NULL);
     *(ret.expr.set) = set;
     *token_ptr = token;
     return ret;
@@ -374,7 +374,7 @@ Expr_t parse_set_func(Token **token_ptr)
     }
     FunDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args, app};
     strcpy(fun.name, name);
-    Expr_t expr = create_expr(FunctionDef, fun.r_type);
+    Expr_t expr = create_expr(FunctionDef, fun.r_type, NULL);
     *(expr.expr.func_def) = fun;
     *token_ptr = token;
     return expr;
@@ -415,7 +415,7 @@ Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_
         PERR_FL("error: type mismatch between cases");
     }
     Cond_t cond = {Conditional, if_false.r_type, predicate, if_true, if_false};
-    Expr_t ret = create_expr(Conditional, cond.r_type);
+    Expr_t ret = create_expr(Conditional, cond.r_type, NULL);
     *(ret.expr.cond) = cond;
     return ret;
 }
@@ -430,8 +430,8 @@ Expr_t parse_parens(Token **token_ptr)
     }
     Token *end = skip_nest(&token, OParens, CParens);
     end = end->prev;
-    free(end->next);
-    free(start->prev);
+    // free(end->next);
+    // free(start->prev);
     start->prev = NULL;
     end->next = NULL;
     end->next = NULL;
@@ -501,7 +501,7 @@ Expr_t parse_list(Token **token_ptr)
                 curr->tail = NULL;
                 lst_expr.r_type = curr->head.r_type;
                 lst_expr.expr.cons = lst.cons->tail;
-                add_ptr_to_ll(lst_expr.expr.ptr);
+                add_ptr_to_ll(lst_expr.expr.ptr, NULL);
                 free(lst.cons);
                 // lst_expr.expr = lst_2;
                 return lst_expr;
@@ -528,7 +528,7 @@ Expr_t parse_sequence(Token **token_ptr)
     }
     NXT_TK;
     
-    Expr_t seq_expr = create_expr(Sequence, Undef_R);
+    Expr_t seq_expr = create_expr(Sequence, Undef_R, NULL);
     Expr_u seq = seq_expr.expr;
     Cons_t *curr = seq.cons;
   
