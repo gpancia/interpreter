@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
         printf("\n");
     }
     printf("\n --------------DONE PARSING-------------\n");
-    init_env(NULL);
+    init_env(NULL, NULL);
     for (int i = 0; i < num_expr; i++) {
         print_expr(evaluate_expr(expr_arr[i]));
         printf("\n");
