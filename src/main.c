@@ -56,15 +56,20 @@ int main(int argc, char *argv[])
         printf("\n");
     }
     printf("\n --------------DONE PARSING-------------\n");
+    Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
+    // print_expr(main_seq);
+    Expr_t ret_main = evaluate_expr(main_seq, NULL);
+    print_expr(ret_main);
+    printf("\n");
     // init_env(NULL, NULL);
     // for (int i = 0; i < num_expr; i++) {
-    //     print_expr(evaluate_expr(expr_arr[i]));
-    //     printf("\n");
+        // print_expr(evaluate_expr(expr_arr[i]));
+        // printf("\n");
     // }
-    // print_env(NULL);
-    // printf("\n");
+    print_env(NULL);
+    printf("\n");
     // free_env(NULL);
-    // free_all_expr();
-    // tk_lst_free();
+    free_all_expr();
+    tk_lst_free();
     return 0;
 }
