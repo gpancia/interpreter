@@ -368,9 +368,7 @@ Expr_t parse_set_func(Token **token_ptr)
     // token = end->next;
     // start->prev = NULL;
     // end->next = NULL;
-    Expr_t args = parse_list(&token);
-    change_cons_type(args.expr.cons, ArgList);
-    args.e_type = ArgList;
+    Expr_t args = parse_cons(&token, ArgList);
     
     if (token->tk != Oper || !seq(token->val, "=")){
         PERR_FL("unexpected token");
@@ -446,29 +444,45 @@ Expr_t parse_parens(Token **token_ptr)
     return parse_expr(&start);
 }
 
-
-Expr_t parse_list(Token **token_ptr)
+Expr_t parse_cons(Token **token_ptr, enum expr_type e_type) 
 {
     Token *token = *token_ptr;
+    enum token_type open, close, separator;
+    if (e_type == List || e_type == ArgList) {
+        open = OBracket;
+        close = CBracket;
+        separator = Comma;
+    }
+    else if (e_type == Sequence) {
+        open = OBrace;
+        close = CBrace;
+        separator = Newline;
+    }
+    else {
+        fprintf(stderr, "%s: ", e_str[e_type]);
+        PERR_FL("Bad e_type");
+    }
+    
+    
     if (token == NULL){
         PERR("trailing '['");
     }
-    else if (token->tk != OBracket){
+    else if (token->tk != open){
         PERR_FL("expected '['");
     }
     else if (token->next == NULL){
         PERR_FL("trailing '['");
     }
     Token *start = token;
-    Token *end = skip_nest(&token, OBracket, CBracket);
+    Token *end = skip_nest(&token, open, close);
     end = end->next;
     token->next = NULL;
     token = start;
     NXT_TK;
-    Expr_u lst = {.cons = malloc(sizeof(Cons_t))};
-    Expr_t lst_expr = {List, Undef_R, lst};
-    Cons_t *curr = lst.cons;
-    curr->e_type = List;
+    Expr_u cons = {.cons = malloc(sizeof(Cons_t))};
+    Expr_t cons_expr = {e_type, Undef_R, cons};
+    Cons_t *curr = cons.cons;
+    curr->e_type = e_type;
     curr->r_type = Undef_R;
 
     Token *element_end;
@@ -476,121 +490,66 @@ Expr_t parse_list(Token **token_ptr)
     while (token != NULL){
         element_end = token;
         while (element_end != NULL) {
-            switch (element_end->tk) {
-            case OBracket:  // allow for nested lists
-                skip_nest(&element_end, OBracket, CBracket);
+            if (element_end->tk == open) {
+                skip_nest(&element_end, open, close);
                 element_end = element_end->next;
-                break;
-            case Comma:
-                if (element_end->prev->tk != Comma && element_end->prev->tk != OBracket) {
+            }
+            else if (element_end->tk == separator) {
+                if (element_end->prev->tk != separator && element_end->prev->tk != open) {
                     temp = element_end;
                     element_end->prev->next = NULL;
                     curr->tail = malloc(sizeof(Cons_t));
                     curr = curr->tail;
                     curr->head = parse_expr(&token);
-                    curr->e_type = List;
+                    curr->e_type = e_type;
                     curr->r_type = curr->head.r_type;
                     element_end->prev->next = temp;
                     token = temp->next;
                     element_end = token;
                 }
+                else {
+                    token = element_end->next;
+                    break;
+                }
                 curr->tail = NULL;
-                break;
-            case CBracket:
-                if (element_end->prev->tk != Comma && element_end->prev->tk != OBracket) {
+            }
+            else if (element_end->tk == close) {
+                if (element_end->prev->tk != separator && element_end->prev->tk != open) {
                     temp = element_end;
                     element_end->prev->next = NULL;
                     curr->tail = malloc(sizeof(Cons_t));
                     curr = curr->tail;
                     curr->head = parse_expr(&token);
-                    curr->e_type = List;
+                    curr->e_type = e_type;
                     curr->r_type = curr->head.r_type;
                     element_end->prev->next = temp;
                     element_end->next = end;
                     *token_ptr = element_end->next;
                 }
                 curr->tail = NULL;
-                lst_expr.r_type = curr->head.r_type;
-                lst_expr.expr.cons = lst.cons->tail;
-                add_ptr_to_ll(lst_expr.expr.ptr, NULL);
-                free(lst.cons);
-                // lst_expr.expr = lst_2;
-                get_cons_size(lst_expr.expr.cons);
-                return lst_expr;
-            default:
+                cons_expr.r_type = curr->head.r_type;
+                cons_expr.expr.cons = cons.cons->tail;
+                add_ptr_to_ll(cons_expr.expr.ptr, NULL);
+                free(cons.cons);
+                // cons_expr.expr = cons_2;
+                get_cons_size(cons_expr.expr.cons);
+                return cons_expr;
+            }
+            else {
                 element_end = element_end->next;
-                break;
             }
         }
     }
     PERR_FL("missing ']'");
 }
 
+Expr_t parse_list(Token **token_ptr) {
+    return parse_cons(token_ptr, List);
+}
+
 Expr_t parse_sequence(Token **token_ptr)
 {
-    Token *token = *token_ptr;
-    if (token == NULL){
-        PERR("trailing '{'");
-    }
-    else if (token->tk != OBrace){
-        PERR_FL("expected '{'");
-    }
-    else if (token->next == NULL){
-        PERR_FL("trailing '{'");
-    }
-    
-    Expr_t seq_expr = create_expr(Sequence, Undef_R, NULL);
-    Expr_u seq = seq_expr.expr;
-    Cons_t *curr = seq.cons;
-    
-    Token *start = token;
-    Token *end = skip_nest(&token, OBrace, CBrace);
-    end = end->next;
-    token->next = NULL;
-    token = start;
-    
-    NXT_TK;
-    // Since every time a new element is found new memory is malloc'd, to avoid
-    // having an empty head at the beginning of the sequence, this if/else statement
-    // is necessary before the while loop
-    if (token->tk == CBrace) {
-        curr->head = NULL_EXPR;
-    }
-    else {
-        if (token->tk == Newline) { NXT_TK; }
-        curr->head = parse_expr(&token);
-        curr->e_type = Sequence;
-        curr->r_type = curr->head.r_type;
-    }
-    while (token != NULL){
-        if (token->tk == Newline) {  // ignore newlines within code block
-            NXT_TK;
-        }
-        else if (token->tk == OBrace) {
-            token = skip_nest(&token, OBrace, CBrace);  // skip nested sequences
-            NXT_TK;
-        }
-        else if (token->tk == CBrace) {
-            curr->tail = NULL;
-            seq_expr.r_type = curr->head.r_type;
-            token->next = end;
-            NXT_TK;
-            if (token != NULL && token->tk == Newline) {
-                NXT_TK;
-            }
-            *token_ptr = token;
-            get_cons_size(seq_expr.expr.cons);
-            return seq_expr;
-        }
-        else {
-            curr->tail = malloc(sizeof(Cons_t));
-            curr = curr->tail;
-            curr->head = parse_expr(&token);
-            curr->e_type = Sequence;
-            curr->r_type = curr->head.r_type;
-        }
-    }
-    PERR_FL("missing '}'");
+    return parse_cons(token_ptr, Sequence);
 }
 
 Expr_t parse_constant(Token **token_ptr)
@@ -627,14 +586,6 @@ Expr_t parse_constant(Token **token_ptr)
         PERR_FL("something went wrong with token type (parse_constant)");
     }
     return ret;
-}
-
-void change_cons_type(Cons_t *cons, enum expr_type e_type) {
-    Cons_t *curr = cons;
-    while (curr != NULL) {
-        curr->e_type = e_type;
-        curr = curr->tail;
-    }
 }
 
 uint get_cons_size(Cons_t *cons) {

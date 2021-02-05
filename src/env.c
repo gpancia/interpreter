@@ -40,12 +40,16 @@ Env_Item * find_env_item(Env **env_ptr, char*name) {
             curr = curr->next;
         }
     }
+    curr = NULL;
     // recurse through parent scopes until name is found
     if (env->parent != NULL) {
-        *env_ptr = env->parent;
-        return find_env_item(env_ptr, name);
+        env = env->parent;
+        curr = find_env_item(&env, name);
+        if (curr != NULL) {
+            *env_ptr = env;
+        }
     }
-    return NULL;  // found nothing
+    return curr;
 }
 
 Expr_t * get_val(Env *env, char *name) {
@@ -139,5 +143,8 @@ void free_env(Env *env) {
         prev = curr;
         curr = curr->next;
         free(prev);
+    }
+    if (env->parent != NULL) {
+        env->parent->child = NULL;
     }
 }

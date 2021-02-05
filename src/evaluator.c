@@ -4,9 +4,9 @@
 #include <string.h>
 #include <math.h>
 
-#include "env.h"
+// #include "env.h"
 
-Expr_t evaluate_expr(Expr_t expr) {
+Expr_t evaluate_expr(Expr_t expr, Env *env) {
     Expr_t ret = NULL_EXPR;
 
     switch (expr.e_type) {
@@ -15,22 +15,22 @@ Expr_t evaluate_expr(Expr_t expr) {
     case Mul:
     case Div:
     case Concat:
-        return evaluate_arith(expr);
+        return evaluate_arith(expr, env);
         
     case Set:
-        return evaluate_set(expr);
+        return evaluate_set(expr, env);
         
     case BExpr:
-        return evaluate_bexpr(expr);
+        return evaluate_bexpr(expr, env);
         
     case Conditional:
-        return evaluate_cond(expr);
+        return evaluate_cond(expr, env);
         
     case List:
-        return evaluate_list(expr);
+        return evaluate_list(expr, env);
         
     case Sequence:
-        return evaluate_sequence(expr);
+        return evaluate_sequence(expr, env);
         
     // TODO: implement these
     case ArgList:
@@ -39,7 +39,7 @@ Expr_t evaluate_expr(Expr_t expr) {
         return NULL_EXPR;
         
     case Var:
-        return evaluate_id(expr);
+        return evaluate_id(expr, env);
         
     case Constant:
         return expr;
@@ -52,20 +52,20 @@ Expr_t evaluate_expr(Expr_t expr) {
 }
 
 
-Expr_t evaluate_arith(Expr_t expr) {
+Expr_t evaluate_arith(Expr_t expr, Env *env) {
     Expr_t ret = NULL_EXPR, left, right;
     
     enum result_type r_type;
 
     // evaluate subexpressions so they are both constant
     if (expr.expr.arith->left.e_type != Constant) {
-        left = evaluate_expr(expr.expr.arith->left);
+        left = evaluate_expr(expr.expr.arith->left, env);
     }
     else {
         left = expr.expr.arith->left;
     }
     if (expr.expr.arith->right.e_type != Constant) {
-        right = evaluate_expr(expr.expr.arith->right);
+        right = evaluate_expr(expr.expr.arith->right, env);
     }
     else {
         right = expr.expr.arith->right;
@@ -206,25 +206,25 @@ Expr_t evaluate_arith(Expr_t expr) {
     return ret;
 }
 
-Expr_t evaluate_set(Expr_t expr) {
-    Expr_t val = evaluate_expr(expr.expr.set->val);
-    set_val(NULL, expr.expr.set->name, &val);
+Expr_t evaluate_set(Expr_t expr, Env *env) {
+    Expr_t val = evaluate_expr(expr.expr.set->val, env);
+    set_val(env, expr.expr.set->name, &val);
     return val;
 }
 
-Expr_t evaluate_id(Expr_t expr) {
+Expr_t evaluate_id(Expr_t expr, Env *env) {
     // print_env();
     Var_t *var = expr.expr.var;
     char *name = var->name;
-    Expr_t *val = get_val(NULL, name);
+    Expr_t *val = get_val(env, name);
     if (val == NULL) {
-        fprintf(stderr, "evaluate_id: undeclared variable \"%s\"", name);
+        fprintf(stderr, "evaluate_id: undeclared variable \"%s\"\n", name);
         exit(1);
     }
     return *val;
 }
 
-Expr_t evaluate_bexpr(Expr_t expr) {
+Expr_t evaluate_bexpr(Expr_t expr, Env *env) {
     if (expr.e_type != BExpr) {
         fprintf(stderr, "evaluate_bexpr: invalid expression of type %s:\n", e_str[expr.e_type]);
         print_expr(expr);
@@ -238,12 +238,12 @@ Expr_t evaluate_bexpr(Expr_t expr) {
     BExpr_t *bexpr = expr.expr.bexpr;
     // char left_b, right_b;
     if (bexpr->b_type == Not) {
-        char left_b = constant_to_bool(evaluate_expr(bexpr->left));
+        char left_b = constant_to_bool(evaluate_expr(bexpr->left, env));
         ret_c->b = (long long) (left_b == 0);
     }
     else {
         Constant_Values *lr_vals[2] = {malloc(sizeof(Constant_Values)), malloc(sizeof(Constant_Values))};
-        Expr_t lr_expr[2] = {evaluate_expr(bexpr->left), evaluate_expr(bexpr->right)};
+        Expr_t lr_expr[2] = {evaluate_expr(bexpr->left, env), evaluate_expr(bexpr->right, env)};
         enum result_type r_type = consolidate_constant_pair(lr_expr, lr_vals);
         if (r_type == String_R) {
             lr_vals[0]->i = (long long) strlen(lr_vals[0]->str);
@@ -304,15 +304,15 @@ Expr_t evaluate_bexpr(Expr_t expr) {
     return ret;
 }
 
-Expr_t evaluate_cond(Expr_t expr) {
-    char p = constant_to_bool(evaluate_expr(expr.expr.cond->p));
-    return evaluate_expr((p) ? expr.expr.cond->if_true : expr.expr.cond->if_false);
+Expr_t evaluate_cond(Expr_t expr, Env *env) {
+    char p = constant_to_bool(evaluate_expr(expr.expr.cond->p, env));
+    return evaluate_expr((p) ? expr.expr.cond->if_true : expr.expr.cond->if_false, env);
 }
 
-Expr_t evaluate_list(Expr_t expr) {
+Expr_t evaluate_list(Expr_t expr, Env *env) {
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {
-        Expr_t ret = evaluate_expr(curr->head);
+        Expr_t ret = evaluate_expr(curr->head, env);
         // free_expr(curr->head);
         curr->head = ret;
         curr = curr->tail;
@@ -320,12 +320,24 @@ Expr_t evaluate_list(Expr_t expr) {
     return expr;
 }
 
-Expr_t evaluate_sequence(Expr_t expr) {
+Expr_t evaluate_sequence(Expr_t expr, Env *env) {
+    Env *child;
+    if (env == NULL) {
+        child = &global_env;
+    }
+    else {
+        child = (Env *) malloc(sizeof(Env));
+    }
+    init_env(child, env);
     Expr_t ret;
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {
-        ret = evaluate_expr(curr->head);
+        ret = evaluate_expr(curr->head, child);
         curr = curr->tail;
+    }
+    if (child != &global_env) {
+        free_env(child);
+        free(child);
     }
     return ret;    
 }
@@ -350,4 +362,16 @@ char constant_to_bool(Expr_t expr) {
         print_expr(expr);
         exit(1);
     }
+}
+
+Expr_t expr_array_to_sequence(Expr_t *arr, int size) {
+    enum result_type r_type = arr[size-1].r_type;
+    Expr_t ret = create_expr(Sequence, r_type, NULL);
+    Cons_t *curr = ret.expr.cons;
+    for (int i = 0; i < size-1; i++) {
+        *curr = (Cons_t) {Sequence, r_type, arr[i], malloc(sizeof(Cons_t)), size-i};
+        curr = curr->tail;
+    }
+    *curr = (Cons_t) {Sequence, r_type, arr[size-1], NULL, 1};
+    return ret;
 }
