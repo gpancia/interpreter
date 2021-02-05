@@ -11,7 +11,7 @@ typedef struct Env_Item {
 } Env_Item;
 
 
-// recursive tree of circular doubly-linked lists
+// Tree of circular doubly-linked lists
 typedef struct Env {
     Env_Item head;
     Env_Item *tail;
@@ -24,15 +24,24 @@ Env global_env;
 
 void init_env(Env *env, Env *parent);
 
-// finds Env_Item from current Env and all parent Envs, NULL if not found;
-// sets *env_ptr to environment in which name was found
+// Finds Env_Item from current Env and all parent Envs, NULL if not found;
+// Sets *env_ptr to environment in which name was found.
+// Priority is given to local envs.
 Env_Item *find_env_item(Env **env_ptr, char *name);
 
 // returns NULL if not found
 Expr_t* get_val(Env *, char *);
 
-// returns 1 if error when setting val
+// Either adds or updates a value in local env or parent envs, with priority
+// to local envs.
 int set_val(Env *, char *, Expr_t *);
+
+// Like set_env but only adds values to local env, never updating them.
+// Used to set values for function arguments.
+// Should only be used in newly created envs, otherwise there is a risk that
+// duplicate values are inserted into the same env.
+int add_val(Env *, char *, Expr_t *);  
+
 
 void print_env(Env *);
 

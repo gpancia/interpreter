@@ -69,19 +69,36 @@ int set_val(Env *env, char *name, Expr_t *expr) {
     }
     // if they do not, variable will be added to original scope
     
-    Env_Item *new_env = (Env_Item *) malloc(sizeof(Env_Item));
-    *new_env = (Env_Item) {env->tail, NULL,
+    Env_Item *new_ei = (Env_Item *) malloc(sizeof(Env_Item));
+    *new_ei = (Env_Item) {env->tail, NULL,
                            (char *) malloc(strlen(name)+1),
                            (Expr_t *) malloc(sizeof(Expr_t)),
                            NULL};
-    strcpy(new_env->name, name);
-    *new_env->expr = copy_expr(expr, &new_env->ll_loc);
-    env->tail->next = new_env;
-    env->tail = new_env;
+    strcpy(new_ei->name, name);
+    *new_ei->expr = copy_expr(expr, &new_ei->ll_loc);
+    env->tail->next = new_ei;
+    env->tail = new_ei;
     
     return 0;
 }
 
+int add_val(Env *env, char *name, Expr_t *expr) {
+    env = ENV_LOCAL_OR_GLOBAL(env);
+
+    // search for existing variables with the same name
+    
+    Env_Item *new_ei = (Env_Item *) malloc(sizeof(Env_Item));
+    *new_ei = (Env_Item) {env->tail, NULL,
+                           (char *) malloc(strlen(name)+1),
+                           (Expr_t *) malloc(sizeof(Expr_t)),
+                           NULL};
+    strcpy(new_ei->name, name);
+    *new_ei->expr = copy_expr(expr, &new_ei->ll_loc);
+    env->tail->next = new_ei;
+    env->tail = new_ei;
+    
+    return 0;
+}
 
 void print_env(Env *env) {
     env = ENV_LOCAL_OR_GLOBAL(env);

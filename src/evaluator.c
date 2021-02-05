@@ -30,13 +30,16 @@ Expr_t evaluate_expr(Expr_t expr, Env *env) {
         return evaluate_list(expr, env);
         
     case Sequence:
-        return evaluate_sequence(expr, env);
+        return evaluate_sequence_local(expr, env);
         
-    // TODO: implement these
     case ArgList:
+        // I don't think this should ever come up here
+        fprintf(stderr, "evaluator error: ArgList shouldn't be here\n");
+        exit(1);
     case Function:
+        return evaluate_func(expr, env);
     case FunctionDef:
-        return NULL_EXPR;
+        return evaluate_funcdef(expr, env);
         
     case Var:
         return evaluate_id(expr, env);
@@ -58,25 +61,17 @@ Expr_t evaluate_arith(Expr_t expr, Env *env) {
     enum result_type r_type;
 
     // evaluate subexpressions so they are both constant
-    if (expr.expr.arith->left.e_type != Constant) {
-        left = evaluate_expr(expr.expr.arith->left, env);
-    }
-    else {
-        left = expr.expr.arith->left;
-    }
-    if (expr.expr.arith->right.e_type != Constant) {
-        right = evaluate_expr(expr.expr.arith->right, env);
-    }
-    else {
-        right = expr.expr.arith->right;
-    }
+    left = evaluate_expr(expr.expr.arith->left, env);
+    right = evaluate_expr(expr.expr.arith->right, env);
 
     if (left.e_type != Constant || right.e_type != Constant) {
         fprintf(stderr, "Error with following expression:\n");
         print_expr(expr);
         fprintf(stderr, "which evaluates to:\n");
         print_expr(left);
+        fprintf(stderr, ", ");
         print_expr(right);
+        fprintf(stderr, "\n");
         exit(1);
     }
 
@@ -320,27 +315,103 @@ Expr_t evaluate_list(Expr_t expr, Env *env) {
     return expr;
 }
 
-Expr_t evaluate_sequence(Expr_t expr, Env *env) {
-    Env *child;
+Expr_t evaluate_sequence_local(Expr_t expr, Env *env) {
+
+    Env *local_env;
     if (env == NULL) {
-        child = &global_env;
+        local_env = &global_env;
     }
     else {
-        child = (Env *) malloc(sizeof(Env));
+        local_env = (Env *) malloc(sizeof(Env));
     }
-    init_env(child, env);
+    init_env(local_env, env);
+    
+    Expr_t ret = evaluate_sequence(expr, local_env);
+    
+    if (local_env != &global_env) {
+        free_env(local_env);
+        free(local_env);
+    }
+    return ret;
+}
+
+Expr_t evaluate_sequence(Expr_t expr, Env *env) {
     Expr_t ret;
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {
-        ret = evaluate_expr(curr->head, child);
+        ret = evaluate_expr(curr->head, env);
         curr = curr->tail;
-    }
-    if (child != &global_env) {
-        free_env(child);
-        free(child);
     }
     return ret;    
 }
+
+
+Expr_t evaluate_funcdef(Expr_t expr, Env *env) {
+    FuncDef_t *func_def = expr.expr.func_def;
+    
+    // // check if all args are valid (i.e.: empty variable names) (is this necessary? no)
+    // if (!is_null_expr(expr.expr.func_def->args)) {
+    //     Cons_t *curr = func_def->args.expr.cons;
+    //     uint size = curr->size;
+    //     for (uint i = 0; i < size; i++) {
+    //         if (curr->head.e_type != Var || get_val(env, curr->head.expr.var->name) != NULL) {
+    //             fprintf(stderr,
+    //                     "evaluator error: argument %s of function %s is already defined as a variable elsewhere\n",
+    //                     curr->head.expr.var->name, func_def->name);
+    //             exit(1);
+    //         }
+    //     }
+    // }
+
+    set_val(env, func_def->name, &expr);
+    return NULL_EXPR;  // hopefully this doesn't trigger any errors
+}
+
+Expr_t evaluate_func(Expr_t expr, Env *env) {
+    Expr_t *func_def_expr = get_val(env, expr.expr.func->name);
+    if (func_def_expr == NULL) {
+        fprintf(stderr, "error: function %s not defined\n", expr.expr.func->name);
+        exit(1);
+    }
+    
+    FuncDef_t *func_def = func_def_expr->expr.func_def;
+    Func_t *func = expr.expr.func;
+    Cons_t *arg_names = func_def->args;
+    Cons_t *arg_vals = func->args;
+
+    // check for argument number consistency
+    if (arg_names->size != arg_vals->size) {
+        fprintf(stderr, "error:%s: passed %u arguments, expected %u\n",
+                func->name, arg_vals->size, arg_names->size);
+        exit(1);
+    }
+
+    // create local environment with arguments
+    Env *local_env = malloc(sizeof(Env));
+    init_env(local_env, env);
+    // for (uint i = 0; i < arg_names->size; i++) {
+    while (arg_names != NULL && arg_vals != NULL) {
+        // arguments set here will have priority over variables set in parent scopes
+        Expr_t a_val = evaluate_expr(arg_vals->head, env);
+        add_val(local_env, arg_names->head.expr.var->name, &a_val);
+        arg_names = arg_names->tail;
+        arg_vals = arg_vals->tail;
+    }
+    if ((arg_names == NULL && arg_vals != NULL) || (arg_vals == NULL && arg_names != NULL)) {
+        fprintf(stderr, "evaluator error: mismatched arg_names and arg_vals");
+    }
+    
+    Expr_t ret = evaluate_sequence(func_def->app, local_env);
+
+    free_env(local_env);
+    free(local_env);
+    
+    return ret;    
+}
+
+
+
+
 
 char constant_to_bool(Expr_t expr) {
     if (expr.e_type != Constant) {
