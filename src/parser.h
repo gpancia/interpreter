@@ -21,8 +21,10 @@ Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_
 Expr_t parse_parens(Token**);
 
 Expr_t parse_cons(Token **, enum expr_type);
+
 Expr_t parse_list(Token**);
 Expr_t parse_sequence(Token**);
+Expr_t parse_arglist(Token**);
 
 Expr_t parse_constant(Token**); 
 
