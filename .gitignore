@@ -78,6 +78,8 @@ build/
 output/
 src/compile_commands.json
 .dir-locals.el
+commit_message.txt
+.commit_message.txt.swp
 
 # Source files not in src/
 *.c
