@@ -236,8 +236,7 @@ void init_ll_expr() {
 
 Expr_t create_expr(enum expr_type e_type, enum result_type r_type, LL_Expr **loc) {
     Expr_t ret = {e_type, r_type, {malloc(e_size[e_type])}};
-    ret.expr.generic->e_type = e_type;
-    ret.expr.generic->r_type = r_type;
+    *ret.expr.expr = (Expr_t) {e_type, r_type, {NULL}};
     add_ptr_to_ll((void *) ret.expr.generic, loc);
     return ret;
 }

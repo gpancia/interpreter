@@ -336,6 +336,7 @@ Expr_t evaluate_sequence_local(Expr_t expr, Env *env) {
 }
 
 Expr_t evaluate_sequence(Expr_t expr, Env *env) {
+    env = (env == NULL) ? &global_env : env;
     Expr_t ret;
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {

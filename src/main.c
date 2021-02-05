@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
         // }
         print_env(NULL);
         printf("\n");
-        // free_env(NULL);
+        free_env(NULL);
         free_all_expr();
         tk_lst_free();
     }
