@@ -138,6 +138,7 @@ Expr_t wrap_cons(Cons_t*);
 Expr_t wrap_int(long long);
 Expr_t wrap_flt(double);
 Expr_t wrap_str(char*);
+Expr_t wrap_char(char);
 Expr_t wrap_bool(char);
 
 typedef struct Constant_Values {

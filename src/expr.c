@@ -134,8 +134,15 @@ Expr_t wrap_flt(double f)
 Expr_t wrap_str(char *str)
 {
     Expr_t ret = create_expr(Constant, String_R, NULL);
-    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char*)malloc(sizeof(char)*(1+strlen(str)))}};
+    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char *) malloc(sizeof(char)*(1+strlen(str)))}};
     sprintf(ret.expr.constant->str, "%s", str);
+    return ret;
+}
+
+Expr_t wrap_char(char c) {
+    Expr_t ret = create_expr(Constant, String_R, NULL);
+    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char *) malloc(sizeof(char)*2)}};
+    sprintf(ret.expr.constant->str, "%c", c);
     return ret;
 }
 
