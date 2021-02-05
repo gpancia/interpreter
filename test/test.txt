@@ -4,6 +4,15 @@ and including any \\n's inside the string."
 (1+2)*3
 1+2*3
 
+func(arg1, arg2) = 
+{
+    x1 = arg1+arg2
+    x2 = -arg2
+    x1 - x2
+}
+
+func2() = 5
+
 int1 = 2
 int2 = 2
 
@@ -13,15 +22,17 @@ if (5+3 > 10)
     int2 = 2+3
 }
 {
-    int1 = 69
+    int1 = 400
 }
+
 b = 5 < -5
 nb = !b
 
 example_str2 = example_str + " I have been concat'ed!."
-example_str3 = example_str + example_str
 example_list = [1,3,5,7]
 example_list_2 = [[2,3],[5,3,76],[10]]
 example_float = 4.5
 example_float2 = example_float + int2
+
+heck = func(1,-5)  # should be -9
 

@@ -39,8 +39,8 @@ typedef union Expr_u{
     struct Cond_t *cond; // Conditional
     struct Cons_t *cons; // List, Sequence, ArgList
     struct Arith_t *arith; // Add, Sub, Mul, Div
-    struct Fun_t *func; // Function
-    struct FunDef_t *func_def; // FunctionDef
+    struct Func_t *func; // Function
+    struct FuncDef_t *func_def; // FunctionDef
     struct Var_t *var; // Var
     struct Constant_t *constant; // Constant
 }Expr_u;
@@ -94,20 +94,20 @@ typedef struct Arith_t{
     Expr_t right;
 }Arith_t;
 
-typedef struct Fun_t{
+typedef struct Func_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
-    Expr_t args;
-}Fun_t;
+    Cons_t *args;
+}Func_t;
 
-typedef struct FunDef_t{
+typedef struct FuncDef_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
-    Expr_t args;
+    Cons_t *args;
     Expr_t app;
-}FunDef_t;
+}FuncDef_t;
 
 typedef struct Var_t{
     enum expr_type e_type;
@@ -131,6 +131,9 @@ int is_null_expr(Expr_t);
 
 void print_expr(Expr_t);
 
+// Wrappers
+Expr_t wrap_expr_u(Expr_u);
+Expr_t wrap_cons(Cons_t*);
 Expr_t wrap_int(long long);
 Expr_t wrap_flt(double);
 Expr_t wrap_str(char*);

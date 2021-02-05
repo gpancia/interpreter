@@ -89,14 +89,14 @@ void print_expr(Expr_t expr)
     case FunctionDef:
         printf("function name: %s, ", expr.expr.func_def->name);
         printf("arg names: ");
-        print_expr(expr.expr.func_def->args);
+        print_expr(wrap_cons(expr.expr.func_def->args));
         printf(", application: ");
         print_expr(expr.expr.func_def->app);
         break;
     case Function:
         printf("function name: %s, ", expr.expr.func->name);
         printf("args: ");
-        print_expr(expr.expr.func->args);
+        print_expr(wrap_cons(expr.expr.func->args));
         break;
     case Generic:
     default:
@@ -107,7 +107,13 @@ void print_expr(Expr_t expr)
     return;
 }
 
-// Constant wrappers
+// Wrappers
+Expr_t wrap_expr_u(Expr_u u) {
+    return (Expr_t) {u.generic->e_type, u.generic->r_type, u};
+}
+Expr_t wrap_cons(Cons_t *cons) {
+    return wrap_expr_u((Expr_u) {cons});
+}
 Expr_t wrap_int(long long i)
 {
     Expr_t ret = create_expr(Constant, Int_R, NULL);
@@ -230,8 +236,7 @@ void init_ll_expr() {
 
 Expr_t create_expr(enum expr_type e_type, enum result_type r_type, LL_Expr **loc) {
     Expr_t ret = {e_type, r_type, {malloc(e_size[e_type])}};
-    ret.expr.generic->e_type = e_type;
-    ret.expr.generic->r_type = r_type;
+    *ret.expr.expr = (Expr_t) {e_type, r_type, {NULL}};
     add_ptr_to_ll((void *) ret.expr.generic, loc);
     return ret;
 }

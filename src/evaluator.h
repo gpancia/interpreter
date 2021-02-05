@@ -11,8 +11,12 @@ Expr_t evaluate_set(Expr_t expr, Env *env);
 Expr_t evaluate_id(Expr_t expr, Env *env);
 Expr_t evaluate_bexpr(Expr_t expr, Env *env);
 Expr_t evaluate_cond(Expr_t expr, Env *env);
+Expr_t evaluate_sequence_local(Expr_t expr, Env *env);  // creates local scope and calls evaluate_sequence
 Expr_t evaluate_sequence(Expr_t expr, Env *env);
 Expr_t evaluate_list(Expr_t expr, Env *env);
+
+Expr_t evaluate_funcdef(Expr_t expr, Env *env);
+Expr_t evaluate_func(Expr_t expr, Env *env);
 
 char constant_to_bool(Expr_t expr);
 

@@ -1,8 +1,9 @@
+#include "parser.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "tk_line.h"
-#include "parser.h"
+#include "lexer.h"
 
 #define PERR_FL(str) fprintf(stderr, "%s:%d, %s:%d: error: %s\n", file_name, (*token_ptr)->line_num, __func__,__LINE__, str);exit(1)
 #define PERR(str) fprintf(stderr, "%s:%s: error: %s\n", file_name, __func__, str);exit(1)
@@ -176,9 +177,10 @@ Expr_t parse_id(Token** token_ptr)
     Token *token = *token_ptr;
     char *name = token->val;
     NXT_TK;
-    if (token != NULL && token->tk == OBracket){
+    if (token != NULL && token->tk == OParens){
         ret = create_expr(Function, Undef_R, NULL);
-        Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_list(&token)};
+        Expr_t args = parse_arglist(&token);
+        Func_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), args.expr.cons};
         strcpy(fun.name, name);
         *(ret.expr.func) = fun;
     }
@@ -327,7 +329,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
 // check if set is for var or func (square brackets before '=')
 Expr_t parse_set(Token **token_ptr)
 {
-    if ((*token_ptr)->next->tk == OBracket) {
+    if ((*token_ptr)->next->tk == OParens) {
         return parse_set_func(token_ptr);
     }
     else if ((*token_ptr)->next->tk == Oper){
@@ -363,22 +365,22 @@ Expr_t parse_set_func(Token **token_ptr)
         PERR("Null token");
     }
     char *name = get_name(&token);
-    // Token *start = token;
-    // Token *end = skip_nest(&token, OBracket, CBracket);
-    // token = end->next;
-    // start->prev = NULL;
-    // end->next = NULL;
-    Expr_t args = parse_cons(&token, ArgList);
+    Expr_t args = parse_arglist(&token);
     
     if (token->tk != Oper || !seq(token->val, "=")){
         PERR_FL("unexpected token");
     }
     NXT_TK;
-    Expr_t app = parse_sequence(&token);
+    if (token->tk == Newline) {
+        while (token != NULL && token->tk == Newline) {
+            token = token->next;
+        }
+    }
+    Expr_t app = parse_expr(&token);
     // if (args->r_type != String_R){
     //     PERR_FL("Argument list when defining function must be composed of names only");
     // }
-    FunDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args, app};
+    FuncDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args.expr.cons, app};
     strcpy(fun.name, name);
     Expr_t expr = create_expr(FunctionDef, fun.r_type, NULL);
     *(expr.expr.func_def) = fun;
@@ -409,17 +411,17 @@ Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_
     Expr_t predicate = parse_parens(&pred);
     
     token = cond_true;
-    skip_nest(&token, OBrace, CBrace);
-    token->next = NULL;
+    // skip_nest(&token, OBrace, CBrace);
+    // token->next = NULL;
     Expr_t if_true = parse_sequence(&cond_true);
     token = cond_false;
-    skip_nest(&token, OBrace, CBrace);
-    *token_ptr = token->next;
-    token->next = NULL;
+    // skip_nest(&token, OBrace, CBrace);
+    // token->next = NULL;
     Expr_t if_false = parse_sequence(&cond_false);
     if (if_false.r_type != if_true.r_type){
         PERR_FL("error: type mismatch between cases");
     }
+    *token_ptr = token->next;
     Cond_t cond = {Conditional, if_false.r_type, predicate, if_true, if_false};
     Expr_t ret = create_expr(Conditional, cond.r_type, NULL);
     *(ret.expr.cond) = cond;
@@ -448,15 +450,27 @@ Expr_t parse_cons(Token **token_ptr, enum expr_type e_type)
 {
     Token *token = *token_ptr;
     enum token_type open, close, separator;
-    if (e_type == List || e_type == ArgList) {
+    char c_open, c_close;
+    if (e_type == List) {
         open = OBracket;
         close = CBracket;
         separator = Comma;
+        c_open = '[';
+        c_close= ']';
+    }
+    else if (e_type == ArgList) {
+        open = OParens;
+        close = CParens;
+        separator = Comma;
+        c_open = '(';
+        c_close= ')';
     }
     else if (e_type == Sequence) {
         open = OBrace;
         close = CBrace;
         separator = Newline;
+        c_open = '{';
+        c_close= '}';
     }
     else {
         fprintf(stderr, "%s: ", e_str[e_type]);
@@ -465,14 +479,29 @@ Expr_t parse_cons(Token **token_ptr, enum expr_type e_type)
     
     
     if (token == NULL){
-        PERR("trailing '['");
+        char err_str[100];
+        sprintf(err_str, "%s: trailing '%c'", e_str[e_type], c_open);
+        PERR(err_str);
     }
     else if (token->tk != open){
-        PERR_FL("expected '['");
+        char err_str[100];
+        sprintf(err_str, "%s: expected '%c'", e_str[e_type], c_open);
+        PERR_FL(err_str);
     }
     else if (token->next == NULL){
-        PERR_FL("trailing '['");
+        char err_str[100];
+        sprintf(err_str, "%s: trailing '%c'", e_str[e_type], c_open);
+        PERR_FL(err_str);
     }
+
+    // if empty list/sequence
+    if (token->next != NULL && token->next->tk == close) {
+        Expr_t ret = create_expr(e_type, Undef_R, NULL);
+        *ret.expr.cons = (Cons_t) {e_type, Undef_R, NULL_EXPR, NULL, 0};
+        *token_ptr = token->next->next;
+        return ret;
+    }
+    
     Token *start = token;
     Token *end = skip_nest(&token, open, close);
     end = end->next;
@@ -547,10 +576,14 @@ Expr_t parse_list(Token **token_ptr) {
     return parse_cons(token_ptr, List);
 }
 
-Expr_t parse_sequence(Token **token_ptr)
-{
+Expr_t parse_sequence(Token **token_ptr) {
     return parse_cons(token_ptr, Sequence);
 }
+
+Expr_t parse_arglist(Token **token_ptr) {
+    return parse_cons(token_ptr, ArgList);
+}
+
 
 Expr_t parse_constant(Token **token_ptr)
 {
