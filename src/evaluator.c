@@ -216,6 +216,52 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
         fprintf(stderr, "evaluate_id: undeclared variable \"%s\"\n", name);
         exit(1);
     }
+
+    if (!is_null_expr(var->index)) {
+        // Can only access strings or lists
+        if (val->e_type != List && !(val->e_type == Constant && val->r_type == String_R)) {
+            if (val->e_type == Constant) {
+                fprintf(stderr, "invalid access of %s type variable '%s'\n", r_str[val->r_type], name);
+            }
+            else {
+                fprintf(stderr, "invalid access of %s type variable '%s'\n", e_str[val->e_type], name);
+            }
+            exit(1);
+        }
+
+        Expr_t index_expr = evaluate_expr(var->index, env);
+
+        // index must be int constant
+        if (index_expr.e_type != Constant || index_expr.r_type != Int_R) {
+            fprintf(stderr, "invalid index type %s/%s for variable %s\n", e_str[index_expr.e_type], r_str[index_expr.r_type], name);
+            exit(1);
+        }
+
+        int index_signed = index_expr.expr.constant->i;
+        uint size = (val->e_type == List) ? val->expr.cons->size : strlen(val->expr.constant->str);
+        
+        if (index_signed < 0) {  // if index is negative, count from end of list
+            index_signed += size;
+        }
+        uint index = *(uint *) &index_signed;
+        if (size < index) {
+            fprintf(stderr, "index too large for variable '%s' of len %u\n", name, size);
+            exit(1);
+        }
+
+        if (val->e_type == List) {
+            Cons_t *cons = val->expr.cons;
+            for (uint i = 0; i < index; i++) {
+                cons = cons->tail;
+            }
+            return cons->head;
+        }
+        else {
+            return wrap_char(val->expr.constant->str[index]);
+        }
+        
+    }
+    
     return *val;
 }
 
