@@ -113,6 +113,7 @@ typedef struct Var_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
+    Expr_t index;
 }Var_t;
 
 typedef struct Constant_t{
@@ -137,6 +138,7 @@ Expr_t wrap_cons(Cons_t*);
 Expr_t wrap_int(long long);
 Expr_t wrap_flt(double);
 Expr_t wrap_str(char*);
+Expr_t wrap_char(char);
 Expr_t wrap_bool(char);
 
 typedef struct Constant_Values {
