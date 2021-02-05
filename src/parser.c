@@ -179,7 +179,8 @@ Expr_t parse_id(Token** token_ptr)
     NXT_TK;
     if (token != NULL && token->tk == OParens){
         ret = create_expr(Function, Undef_R, NULL);
-        Fun_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), parse_arglist(&token)};
+        Expr_t args = parse_arglist(&token);
+        Func_t fun = {Function, Undef_R, malloc(sizeof(char)*(1+strlen(name))), args.expr.cons};
         strcpy(fun.name, name);
         *(ret.expr.func) = fun;
     }
@@ -379,7 +380,7 @@ Expr_t parse_set_func(Token **token_ptr)
     // if (args->r_type != String_R){
     //     PERR_FL("Argument list when defining function must be composed of names only");
     // }
-    FunDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args, app};
+    FuncDef_t fun = {FunctionDef, app.r_type, malloc(sizeof(char)*(1+strlen(name))), args.expr.cons, app};
     strcpy(fun.name, name);
     Expr_t expr = create_expr(FunctionDef, fun.r_type, NULL);
     *(expr.expr.func_def) = fun;

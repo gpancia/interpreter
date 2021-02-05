@@ -35,8 +35,8 @@ size_t e_size[] = {sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t), sizeof(Ari
                    sizeof(BExpr_t),
                    sizeof(Cond_t),
                    sizeof(Cons_t), sizeof(Cons_t), sizeof(Cons_t),
-                   sizeof(Fun_t), 
-                   sizeof(FunDef_t),
+                   sizeof(Func_t), 
+                   sizeof(FuncDef_t),
                    sizeof(Var_t),
                    sizeof(Constant_t)};
 
