@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     }
     printf("\n --------------DONE PARSING-------------\n");
 
-#define EVAL_EXPRS false
+#define EVAL_EXPRS true
     if (EVAL_EXPRS) {
         Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
         // print_expr(main_seq);
