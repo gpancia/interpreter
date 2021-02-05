@@ -185,8 +185,16 @@ Expr_t parse_id(Token** token_ptr)
         *(ret.expr.func) = fun;
     }
     else {
+        Expr_t index = NULL_EXPR;
+        if (token!= NULL && token->tk == OBracket) {
+            Token *start = token->next;
+            Token *end = skip_nest(&token, OBracket, CBracket)->prev;
+            end->next = NULL;
+            index = parse_expr(&start);
+            end->next = token;
+        }
         ret = create_expr(Var, Undef_R, NULL);
-        Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name)))};
+        Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name))), index};
         strcpy(var.name, name);
         *(ret.expr.var) = var;
     }

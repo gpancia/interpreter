@@ -66,6 +66,10 @@ void print_expr(Expr_t expr)
     }
     case Var:
         printf("%s", expr.expr.var->name);
+        if (!is_null_expr(expr.expr.var->index)) {
+            printf(", index: ");
+            print_expr(expr.expr.var->index);
+        }
         break;
     case Constant:
         switch (expr.r_type) {

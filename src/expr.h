@@ -113,6 +113,7 @@ typedef struct Var_t{
     enum expr_type e_type;
     enum result_type r_type;
     char *name;
+    Expr_t index;
 }Var_t;
 
 typedef struct Constant_t{
