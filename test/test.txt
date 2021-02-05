@@ -3,12 +3,11 @@ respecting \"escape characters\" like \\, #ignores comments,
 and including any \\n's inside the string."
 (1+2)*3
 1+2*3
-fun[heck] = {
-    heck + 4
-    heck - 2
-}   
 
-if (5+3 < 10)
+int1 = 2
+int2 = 2
+
+if (5+3 > 10)
 {
     int1 = 1
     int2 = 2+3
@@ -26,4 +25,3 @@ example_list_2 = [[2,3],[5,3,76],[10]]
 example_float = 4.5
 example_float2 = example_float + int2
 
-hyuck = fun[5]
