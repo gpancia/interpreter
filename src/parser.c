@@ -492,6 +492,15 @@ Expr_t parse_cons(Token **token_ptr, enum expr_type e_type)
         sprintf(err_str, "%s: trailing '%c'", e_str[e_type], c_open);
         PERR_FL(err_str);
     }
+
+    // if empty list/sequence
+    if (token->next != NULL && token->next->tk == close) {
+        Expr_t ret = create_expr(e_type, Undef_R, NULL);
+        *ret.expr.cons = (Cons_t) {e_type, Undef_R, NULL_EXPR, NULL, 0};
+        *token_ptr = token->next->next;
+        return ret;
+    }
+    
     Token *start = token;
     Token *end = skip_nest(&token, open, close);
     end = end->next;
