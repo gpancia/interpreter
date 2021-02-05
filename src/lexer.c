@@ -85,7 +85,8 @@ int lex(char *file_path)
             i = 0;
             if (c == '\n'){
                 file_line_num++;
-                if (tk_lst.tail->tk == Newline) {// ignore repeated newlines
+                // ignore empty lines
+                if (tk_lst.tail->tk == Newline || tk_lst.tail->line_num == -1) {
                     i = -1;
                     continue;
                 }
