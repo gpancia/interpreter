@@ -37,7 +37,14 @@ char *tk_pattern[][14] = {{"\n"},{"("},{")"},
 int num_tk_types = sizeof(tk_match)/sizeof(tk_match_t);
 int num_interrupts;
 
-int lex(char *file_path)
+int lex_string(char *str) {
+    FILE *stream = fmemopen(str, strlen(str), "r");
+    int ret = lex(stream);
+    fclose(stream);
+    return ret;
+}
+
+int lex_file(char *file_path)
 {
     file_name = basename(file_path);
     FILE *fd = fopen(file_path, "r");
@@ -46,25 +53,31 @@ int lex(char *file_path)
         fclose(fd);
         return 0;
     }
-    build_interrupts();
+    int ret = lex(fd);
+    fclose(fd);
+    return ret;
+}
+
+int lex (void *stream_ptr) {
+    FILE *stream = (FILE*) stream_ptr;
     char token[1000] = "\0";
     char c;
     for (int i = 0; i < 999; i++){
-        c = fgetc(fd);
+        c = fgetc(stream);
     skip_getc:;
         if (c == EOF){
             if (*token && *token != '\n'){
                 token[i] = '\0';
                 tk_add(token);
             }
-            fclose(fd);
+            fclose(stream);
             return 1;
         }
         else if (c == '#'){
             printf("COMMENT: ");
             while (c != '\n' && c != '\0' && c != EOF){
                 printf("%c",c);
-                c = fgetc(fd);
+                c = fgetc(stream);
             }
             printf("\n");
             i = -1;
@@ -94,7 +107,7 @@ int lex(char *file_path)
             }
             if (c == '"'){
                 token[i++] = c;
-                c = fgetc(fd);
+                c = fgetc(stream);
                 int internal_line_num_counter = 0;
                 char escaped = 0;
                 while (c != '"' || escaped){
@@ -112,7 +125,7 @@ int lex(char *file_path)
                         token[i++] = c;
                         token[i+1] = 0;
                     }
-                    c = fgetc(fd);
+                    c = fgetc(stream);
                 }
                 tk_add(token);
                 i = 0;
@@ -120,7 +133,7 @@ int lex(char *file_path)
                 file_line_num += internal_line_num_counter;
             }
             else if (c == '<' || c == '>' || c == '=' || c == '='){
-                char nc = fgetc(fd);
+                char nc = fgetc(stream);
                 if (nc == '='){
                     token[0] = c;
                     token[1] = nc;
@@ -140,7 +153,7 @@ int lex(char *file_path)
                 }
             }
             else if (c == '&' || c == '|'){
-                char nc = fgetc(fd);
+                char nc = fgetc(stream);
                 if (nc == c){
                     token[0] = c;
                     token[1] = nc;
@@ -171,7 +184,6 @@ int lex(char *file_path)
             token[i] = c;
         }
     }
-    fclose(fd);
     return 1;
 }
 

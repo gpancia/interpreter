@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include "config.h"
 #include "flags.h"
 #include "lexer.h"
 #include "lexer_utils.h"
@@ -7,6 +9,7 @@
 #include "env.h"
 #include "evaluator.h"
 #include "error_handling.h"
+#include "shell.h"
 
 #ifndef true
 #define true 1
@@ -47,51 +50,84 @@ jmp_buf main_jmp_env;
 
 int main(int argc, char *argv[])
 {
+    char fp[200];
+    char use_shell = 1;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-f") && argc > i+1) {
+            sprintf(fp, "%s/%s", ROOT_DIR, argv[i+1]);
+            use_shell = 0;
+        }
+        else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "-F")) {
+            sprintf(fp, "%s/test/test.txt", ROOT_DIR);
+            use_shell = 0;
+        }
+    }
+    
     FLAGS = parse_flags(argc, argv);
-
+    
     update_interrupts();
+    build_interrupts();
+    
+    tk_lst_init();
     init_ll_expr();
     init_env(NULL, NULL);
 
-    if (setjmp(main_jmp_env)) {
-        fprintf(stderr, "failed to parse tokens\n");
-        goto freeing_step;
+    if (use_shell) {
+        shell();
     }
     else {
-        print_all_tokens2(argc, argv);
-    }
-
-    int num_expr = 0;
-    Expr_t expr_arr[200];
-    Token *token;
-    while (tk_lst.head.next != NULL) {
         if (setjmp(main_jmp_env)) {
-            fprintf(stderr, "failed to parse expression\n");
-        }
-        else {
-            token = NULL;  // forces parse_expr to pop a new line off tk_lst
-            expr_arr[num_expr] = parse_expr(&token);
-            if (is_null_expr(expr_arr[num_expr])) { break; }
-            print_expr(expr_arr[num_expr++]);
-            printf("\n");
-        }
-    }
-    printf("\n --------------DONE PARSING-------------\n");
-
-#define EVAL_EXPRS true
-    if (EVAL_EXPRS) {
-        Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
-        // print_expr(main_seq);
-        if (setjmp(main_jmp_env)) {
-            fprintf(stderr, "failed to evaluate expression\n");
+            fprintf(stderr, "failed to parse tokens\n");
             goto freeing_step;
         }
         else {
-            Expr_t ret_main = evaluate_expr(main_seq, NULL);
-            print_expr(ret_main);
-            printf("\n");
-            print_env(NULL);
-            printf("\n");
+            lex_file(fp);
+            if (FLAGS & VERBOSE_FLAG) {
+                Token *curr = tk_lst.head.next;
+                while (curr != NULL){
+                    printf("[%s", t_str[curr->tk]);
+                    if (curr->val == NULL)
+                        printf("]\n");
+                    else
+                        printf(" : %s]\n", curr->val);
+                    curr = curr->next;
+                }
+            }
+            printf("--------DONE LEXING--------\n\n");
+        }
+
+        int num_expr = 0;
+        Expr_t expr_arr[200];
+        Token *token;
+        while (tk_lst.head.next != NULL) {
+            if (setjmp(main_jmp_env)) {
+                fprintf(stderr, "failed to parse expression\n");
+            }
+            else {
+                token = NULL;  // forces parse_expr to pop a new line off tk_lst
+                expr_arr[num_expr] = parse_expr(&token);
+                if (is_null_expr(expr_arr[num_expr])) { break; }
+                print_expr(expr_arr[num_expr++]);
+                printf("\n");
+            }
+        }
+        printf("\n --------------DONE PARSING-------------\n");
+
+#define EVAL_EXPRS true
+        if (EVAL_EXPRS) {
+            Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
+            // print_expr(main_seq);
+            if (setjmp(main_jmp_env)) {
+                fprintf(stderr, "failed to evaluate expression\n");
+                goto freeing_step;
+            }
+            else {
+                Expr_t ret_main = evaluate_expr(main_seq, NULL);
+                print_expr(ret_main);
+                printf("\n");
+                print_env(NULL);
+                printf("\n");
+            }
         }
     }
  freeing_step:

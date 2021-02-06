@@ -57,7 +57,9 @@ void tk_lst_init(); // initializes global vars tk_lst and full_tk_lst
 void tk_lst_free(); // frees all malloc'd fields in full_tk_lst
 void tk_free(Token*); // frees a malloc'd token and its string, if any
 int tk_add(char *wrd); // adds a token to tk_lst with the appropriate type enum and its pointer to full_tk_lst
-int lex(char *file_path); // reads a file and turns it into a list of tokens using tk_add()
+int lex_string(char *str);  // passes a string stream to lex
+int lex_file(char *file_path);  // passes a file stream to lex
+int lex(void *stream);  // reads a stream and turns it into a list of tokens using tk_add()
 void build_interrupts(); // reads a file with characters that interrupt token names, enabling separation of, for example, a*b into tokens 'a', '*' and 'b'.
 // if file does not exist, calls lexer_utils and builds it.
 

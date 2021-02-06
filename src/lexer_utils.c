@@ -42,7 +42,7 @@ void print_all_tokens2(int argc, char *argv[])
 	strcpy(fp, argv[++curr_arg]);
     }
     tk_lst_init();
-    lex(fp);
+    lex_file(fp);
     if (FLAGS & VERBOSE_FLAG) {
         Token *curr = tk_lst.head.next;
         while (curr != NULL){
