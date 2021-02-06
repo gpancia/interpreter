@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "flags.h"
+#include "error_handling.h"
 
 int is_null_expr(Expr_t e)
 {
@@ -66,6 +67,10 @@ void print_expr(Expr_t expr)
     }
     case Var:
         printf("%s", expr.expr.var->name);
+        if (!is_null_expr(expr.expr.var->index)) {
+            printf(", index: ");
+            print_expr(expr.expr.var->index);
+        }
         break;
     case Constant:
         switch (expr.r_type) {
@@ -130,8 +135,15 @@ Expr_t wrap_flt(double f)
 Expr_t wrap_str(char *str)
 {
     Expr_t ret = create_expr(Constant, String_R, NULL);
-    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char*)malloc(sizeof(char)*(1+strlen(str)))}};
+    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char *) malloc(sizeof(char)*(1+strlen(str)))}};
     sprintf(ret.expr.constant->str, "%s", str);
+    return ret;
+}
+
+Expr_t wrap_char(char c) {
+    Expr_t ret = create_expr(Constant, String_R, NULL);
+    *(ret.expr.constant) = (Constant_t){Constant, String_R, {.str=(char *) malloc(sizeof(char)*2)}};
+    sprintf(ret.expr.constant->str, "%c", c);
     return ret;
 }
 
@@ -150,7 +162,7 @@ enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *l
         if (lr_expr[i].e_type != Constant) {
             fprintf(stderr, "unwrap_consolidate_constant_pair: invalid expressions of type %s:\n", e_str[lr_expr[i].e_type]);
             print_expr(lr_expr[i]);
-            exit(1);
+            THROW_MAIN;
         }
         if (lr_expr[0].r_type == lr_expr[1].r_type) {
             r_type = lr_expr[0].r_type;

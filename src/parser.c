@@ -4,9 +4,10 @@
 #include <string.h>
 #include "tk_line.h"
 #include "lexer.h"
+#include "error_handling.h"
 
-#define PERR_FL(str) fprintf(stderr, "%s:%d, %s:%d: error: %s\n", file_name, (*token_ptr)->line_num, __func__,__LINE__, str);exit(1)
-#define PERR(str) fprintf(stderr, "%s:%s: error: %s\n", file_name, __func__, str);exit(1)
+#define PERR_FL(str) fprintf(stderr, "%s:%d, %s:%d: error: %s\n", file_name, (*token_ptr)->line_num, __func__,__LINE__, str);THROW_MAIN
+#define PERR(str) fprintf(stderr, "%s:%s: error: %s\n", file_name, __func__, str);THROW_MAIN
 #define PWAR_FL(str) fprintf(stderr, "%s:%s:%d: warning: %s\n", file_name, __func__, token->line_num, str)
 #define PWAR(str) fprintf(stderr, "%s:%s: warning: %s\n", file_name, __func__, str)
 
@@ -29,6 +30,7 @@ Expr_t parse_expr(Token **token_ptr)
     Token *cond_tf[2] = {NULL, NULL};
     enum ordering {divmul, addsub, bexpr, set, null=-1}; // ordering is lowest to highest in AST, e.g.: + is higher than *
     enum ordering highest_op = null;
+    
     while (token != NULL){
         if (token->tk < 5 || token->tk == Id) { // skip constants and binds for now
             NXT_TK;
@@ -185,8 +187,16 @@ Expr_t parse_id(Token** token_ptr)
         *(ret.expr.func) = fun;
     }
     else {
+        Expr_t index = NULL_EXPR;
+        if (token!= NULL && token->tk == OBracket) {
+            Token *start = token->next;
+            Token *end = skip_nest(&token, OBracket, CBracket)->prev;
+            end->next = NULL;
+            index = parse_expr(&start);
+            end->next = token;
+        }
         ret = create_expr(Var, Undef_R, NULL);
-        Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name)))};
+        Var_t var = {Var, Undef_R, malloc(sizeof(char)*(1+strlen(name))), index};
         strcpy(var.name, name);
         *(ret.expr.var) = var;
     }
@@ -200,13 +210,13 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
     if (seq(op, "+")){
         fprintf(stderr, "%s:%d: error: invalid use of unary '+'",
                 file_name, line_number);
-        exit(1);
+        THROW_MAIN;
     }
     else if (seq(op, "-")){
         if (e.r_type > 1){
             fprintf(stderr, "%s:%d: error: cannot apply value of type %d to unary '-'",
                     file_name, line_number, e.r_type);
-            exit(1);
+            THROW_MAIN;
         }
         ret = create_expr(Sub, e.r_type, NULL);
         *(ret.expr.arith) = (Arith_t){Sub, e.r_type, ZERO_CONSTANT, e};
@@ -215,7 +225,7 @@ Expr_t parse_op_unary(char *op, Expr_t e, int line_number)
         if (e.r_type == String_R){
             fprintf(stderr, "%s:%d: error: cannot apply value of type %d to unary '!'",
                     file_name, line_number, e.r_type);
-            exit(1);
+            THROW_MAIN;
         }
         ret = create_expr(BExpr, Bool_R, NULL);
         BExpr_t not_expr = {BExpr, Not, e, NULL_EXPR};
@@ -252,7 +262,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
     else if (seq(op, "-")){
         if (left.r_type > 1 || right.r_type > 1){
             fprintf(stderr, "%s:%d: error: unexpected type\n", file_name, line_number);
-            exit(1);
+            THROW_MAIN;
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
             ret = create_expr(Sub, Float_R, NULL);
@@ -270,7 +280,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
     else if (seq(op, "*")){
         if (left.r_type == String_R || right.r_type == String_R){
             fprintf(stderr, "%s:%d: error: unexpected type\n", file_name, line_number);
-            exit(1);
+            THROW_MAIN;
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
             ret = create_expr(Mul, Float_R, NULL);
@@ -292,7 +302,7 @@ Expr_t parse_op_binary(char* op, Expr_t left, Expr_t right, int line_number)
     else if (seq(op, "/")){
         if (left.r_type > 1 || right.r_type > 1){
             fprintf(stderr, "%s:%d: error: unexpected type\n", file_name, line_number);
-            exit(1);
+            THROW_MAIN;
         }
         else if (left.r_type == Float_R || right.r_type == Float_R){
             ret = create_expr(Div, Float_R, NULL);
@@ -418,9 +428,9 @@ Expr_t parse_cond(Token **token_ptr, Token *pred, Token *cond_true, Token *cond_
     // skip_nest(&token, OBrace, CBrace);
     // token->next = NULL;
     Expr_t if_false = parse_sequence(&cond_false);
-    if (if_false.r_type != if_true.r_type){
-        PERR_FL("error: type mismatch between cases");
-    }
+    // if (if_false.r_type != if_true.r_type){
+    //     PERR_FL("error: type mismatch between cases");
+    // }
     *token_ptr = token->next;
     Cond_t cond = {Conditional, if_false.r_type, predicate, if_true, if_false};
     Expr_t ret = create_expr(Conditional, cond.r_type, NULL);
@@ -662,7 +672,7 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
             }
             else if (nested < 0){
                 PERR_FL("invalid nesting, missing opening paren or brace");
-                exit(1);
+                THROW_MAIN;
             }
         }
         if (token->next == NULL) {
@@ -670,5 +680,23 @@ Token *skip_nest(Token **token_ptr, enum token_type open, enum token_type close)
         }
         NXT_TK;
     }
-    PERR_FL("no closing parens or braces");
+    
+    char close_char;
+    switch (close) {
+    case CParens:
+        close_char = ')';
+        break;
+    case CBracket:
+        close_char = ']';
+        break;
+    case CBrace:
+        close_char = '}';
+        break;
+    default:  // just to appease the compiler, should never happen
+        close_char = '?';
+        break;
+    }
+    char str[100];
+    sprintf(str, "expected closing '%c'", close_char);
+    PERR_FL(str);
 }

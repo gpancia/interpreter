@@ -53,6 +53,7 @@ set(FILE_NAMES
     lexer_utils
     parser
     tk_line
+    shell
 )
 
 list(TRANSFORM FILE_NAMES PREPEND "${SOURCE_DIR}/")
@@ -64,6 +65,7 @@ list(APPEND SOURCE_FILES "${SOURCE_DIR}/main.c")
 
 list(TRANSFORM HEADER_FILES APPEND ".h")
 list(APPEND HEADER_FILES "${SOURCE_DIR}/config.h")
+list(APPEND HEADER_FILES "${SOURCE_DIR}/error_handling.h")
 
 set(EXTRA_FILES
     "${SOURCE_DIR}/config.h.in"

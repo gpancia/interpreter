@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "config.h"
 #include "flags.h"
+#include "error_handling.h"
 
 #define MAX_INTERRUPTS 100
 
@@ -25,7 +26,7 @@ tk_match_t tk_match[] = {{Newline, 0, 1},{OParens, 0, 1},{CParens, 0, 1},
                          {OBrace, 0, 1},{CBrace, 0, 1},
                          {OBracket, 0, 1}, {CBracket, 0, 1}, {Comma, 0, 1},
                          {Oper, 1, 14},
-                         {Str, 1, 1}, {Bool, 1, 2}, {Cond, 0, 1}
+                         {Str, 1, 1}, {Bool, 1, 2}, {Cond, 0, 1},
 };
 char *tk_pattern[][14] = {{"\n"},{"("},{")"},
                           {"{"},{"}"},
@@ -36,7 +37,14 @@ char *tk_pattern[][14] = {{"\n"},{"("},{")"},
 int num_tk_types = sizeof(tk_match)/sizeof(tk_match_t);
 int num_interrupts;
 
-int lex(char *file_path)
+int lex_string(char *str) {
+    FILE *stream = fmemopen(str, strlen(str), "r");
+    int ret = lex(stream);
+    fclose(stream);
+    return ret;
+}
+
+int lex_file(char *file_path)
 {
     file_name = basename(file_path);
     FILE *fd = fopen(file_path, "r");
@@ -45,25 +53,31 @@ int lex(char *file_path)
         fclose(fd);
         return 0;
     }
-    build_interrupts();
+    int ret = lex(fd);
+    fclose(fd);
+    return ret;
+}
+
+int lex (void *stream_ptr) {
+    FILE *stream = (FILE*) stream_ptr;
     char token[1000] = "\0";
     char c;
     for (int i = 0; i < 999; i++){
-        c = fgetc(fd);
+        c = fgetc(stream);
     skip_getc:;
         if (c == EOF){
             if (*token && *token != '\n'){
                 token[i] = '\0';
                 tk_add(token);
             }
-            fclose(fd);
+            fclose(stream);
             return 1;
         }
         else if (c == '#'){
             printf("COMMENT: ");
             while (c != '\n' && c != '\0' && c != EOF){
                 printf("%c",c);
-                c = fgetc(fd);
+                c = fgetc(stream);
             }
             printf("\n");
             i = -1;
@@ -85,14 +99,15 @@ int lex(char *file_path)
             i = 0;
             if (c == '\n'){
                 file_line_num++;
-                if (tk_lst.tail->tk == Newline) {// ignore repeated newlines
+                // ignore empty lines
+                if (tk_lst.tail->tk == Newline || tk_lst.tail->line_num == -1) {
                     i = -1;
                     continue;
                 }
             }
             if (c == '"'){
                 token[i++] = c;
-                c = fgetc(fd);
+                c = fgetc(stream);
                 int internal_line_num_counter = 0;
                 char escaped = 0;
                 while (c != '"' || escaped){
@@ -110,7 +125,7 @@ int lex(char *file_path)
                         token[i++] = c;
                         token[i+1] = 0;
                     }
-                    c = fgetc(fd);
+                    c = fgetc(stream);
                 }
                 tk_add(token);
                 i = 0;
@@ -118,7 +133,7 @@ int lex(char *file_path)
                 file_line_num += internal_line_num_counter;
             }
             else if (c == '<' || c == '>' || c == '=' || c == '='){
-                char nc = fgetc(fd);
+                char nc = fgetc(stream);
                 if (nc == '='){
                     token[0] = c;
                     token[1] = nc;
@@ -138,7 +153,7 @@ int lex(char *file_path)
                 }
             }
             else if (c == '&' || c == '|'){
-                char nc = fgetc(fd);
+                char nc = fgetc(stream);
                 if (nc == c){
                     token[0] = c;
                     token[1] = nc;
@@ -169,7 +184,6 @@ int lex(char *file_path)
             token[i] = c;
         }
     }
-    fclose(fd);
     return 1;
 }
 
@@ -223,7 +237,7 @@ int tk_add(char *wrd)
     enum token_type tk;
     if (wrd == NULL || !strlen(wrd)){
         fprintf(stderr, "%s:%d: warning: attempting to add empty token to token list\n", file_name, file_line_num);
-        return 0;
+        THROW_MAIN;
     }
 
     // check if char
@@ -231,11 +245,11 @@ int tk_add(char *wrd)
         int len = strlen(wrd);
         if (len > 3){
             fprintf(stderr, "%s:%d: invalid character %s\n",file_name,file_line_num,wrd);
-            return 0;
+            THROW_MAIN;
         }
         else if (wrd[len-1] != '\''){
             fprintf(stderr, "%s:%d: unmatched '\n",file_name,file_line_num);
-            return 0;
+            THROW_MAIN;
         }
         else {
             tk = Char;
@@ -246,7 +260,7 @@ int tk_add(char *wrd)
             goto assign;
         }
     }
-
+    
     // check if string
     if (*wrd == '"'){
         tk = Str;
