@@ -206,7 +206,7 @@ Expr_t evaluate_set(Expr_t expr, Env *env) {
     void *func_ptr = special_func(expr.expr.set->name);
     if (func_ptr != NULL) {
         fprintf(stderr, "cannot redefine \"%s\"\n", expr.expr.set->name);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     Expr_t val = evaluate_expr(expr.expr.set->val, env);
     set_val(env, expr.expr.set->name, &val);
@@ -408,7 +408,7 @@ Expr_t evaluate_funcdef(Expr_t expr, Env *env) {
     void *func_ptr = special_func(func_def->name);
     if (func_ptr != NULL) {
         fprintf(stderr, "cannot redefine \"%s\"\n", func_def->name);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     // // check if all args are valid (i.e.: empty variable names) (is this necessary? no)
     // if (!is_null_expr(expr.expr.func_def->args)) {
