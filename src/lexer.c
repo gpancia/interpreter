@@ -17,6 +17,7 @@
 InterruptList interrupt_list;
 TokenList tk_lst = {};
 int file_line_num = 0;
+char shell_name[] = "shell";
 char *file_name;
 
 #define PERR_FL(msg) fprintf(stderr, "%s:%s:%d: error: %s", __func__, file_name, file_line_num, msg);
@@ -38,8 +39,22 @@ int num_tk_types = sizeof(tk_match)/sizeof(tk_match_t);
 int num_interrupts;
 
 int lex_string(char *str) {
-    FILE *stream = fmemopen(str, strlen(str), "r");
-    int ret = lex(stream);
+    jmp_buf lex_env;
+    memcpy(lex_env, jmp_env, sizeof(jmp_buf));
+    file_name = shell_name;
+    FILE *stream;
+    int ret;
+    if (setjmp(jmp_env)) {
+        fprintf(stderr, "lexer error, attempting to close string stream...\n");
+        fclose(stream);
+        memcpy(jmp_env, lex_env, sizeof(jmp_buf));
+        THROW_ERROR;
+    }
+    else {
+        stream = fmemopen(str, strlen(str), "r");
+        ret = lex(stream);
+    }
+    memcpy(jmp_env, lex_env, sizeof(jmp_buf));
     fclose(stream);
     return ret;
 }
@@ -196,7 +211,7 @@ void tk_lst_init()
     tk_lst.head.next = NULL;
     tk_lst.head.prev = NULL;
     tk_lst.head.line_num = -1;
-    tk_lst.tail = &(tk_lst.head);
+    tk_lst.tail = &tk_lst.head;
 
     ll_tk_head = (LL_Token) {NULL, NULL};
     ll_tk_tail = &ll_tk_head;
@@ -207,6 +222,9 @@ void tk_lst_free()
 {
     // if list empty:
     if (ll_tk_tail == &ll_tk_head) {
+        if (tk_lst.tail != &tk_lst.head) {  // for safety
+            fprintf(stderr, "this is a bit fishy, why?\n");
+        }
         return;
     }
     LL_Token *curr = ll_tk_head.next;
@@ -219,7 +237,8 @@ void tk_lst_free()
         curr = curr->next;
         free(prev);
     }
-    free(interrupt_list.interrupt);
+    tk_lst.tail = &tk_lst.head;
+    ll_tk_tail = &ll_tk_head;
 }
 
 void tk_free(Token *token)
@@ -237,7 +256,7 @@ int tk_add(char *wrd)
     enum token_type tk;
     if (wrd == NULL || !strlen(wrd)){
         fprintf(stderr, "%s:%d: warning: attempting to add empty token to token list\n", file_name, file_line_num);
-        THROW_MAIN;
+        THROW_ERROR;
     }
 
     // check if char
@@ -245,11 +264,11 @@ int tk_add(char *wrd)
         int len = strlen(wrd);
         if (len > 3){
             fprintf(stderr, "%s:%d: invalid character %s\n",file_name,file_line_num,wrd);
-            THROW_MAIN;
+            THROW_ERROR;
         }
         else if (wrd[len-1] != '\''){
             fprintf(stderr, "%s:%d: unmatched '\n",file_name,file_line_num);
-            THROW_MAIN;
+            THROW_ERROR;
         }
         else {
             tk = Char;
@@ -336,7 +355,7 @@ void build_interrupts()
     char *file = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     interrupt_list.size = *file;
     int offset = sizeof(int); // skip size
-    interrupt_list.interrupt = malloc(2*sizeof(int)*interrupt_list.size); // 2*sizeof(int) instead of sizeof(char)+sizeof(int) to compensate for padding
+    interrupt_list.interrupt = malloc(2*sizeof(int)*interrupt_list.size); // 2*sizeof(int) because of padding
     for (int i = 0; i < interrupt_list.size; i++){
         interrupt_list.interrupt[i].tk_t = (int)file[offset]; // read enum token_type
         offset += sizeof(int); 

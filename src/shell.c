@@ -9,6 +9,10 @@
 
 #define INPUT_SIZE 500
 
+#ifndef SETJMP
+#define SETJMP setjmp(jmp_env)
+#endif
+
 void shell() {
     char input[INPUT_SIZE];
     Token *token;
@@ -20,14 +24,34 @@ void shell() {
         if (!strcmp(input, "quit") || !strcmp(input, "q")) {
             break;
         }
-        tk_lst_init();
-        lex_string(input);
-        token = NULL;
-        expr = parse_expr(&token);
-        expr = evaluate_expr(expr, NULL);
+        if (SETJMP) {
+            fprintf(stderr, "lexing error\n");
+            continue;
+        }
+        else {
+            lex_string(input);
+        }
+
+        if (SETJMP) {
+            fprintf(stderr, "parsing error\n");
+            goto freeing_step;
+        }
+        else {
+            token = NULL;
+            expr = parse_expr(&token);
+        }
+
+        if (SETJMP) {
+            fprintf(stderr, "evaluation error\n");
+            goto freeing_step;
+        }
+        else {
+            expr = evaluate_expr(expr, NULL);
+        }
         print_expr(expr);
         printf("\n");
-        tk_lst_free();
+    freeing_step:
+        tk_lst_free();  // no point in keeping old tokens around 
     }
 }
 
@@ -58,5 +82,7 @@ void trim_str(char *str) {
             break;
         }
     }
-    sprintf(str, "%s", &str[beginning]);
+    char temp_str[INPUT_SIZE];
+    strcpy(temp_str, str + beginning);
+    strcpy(str, temp_str);
 }
