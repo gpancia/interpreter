@@ -10,6 +10,7 @@
 #include "lexer.h"
 #include "config.h"
 #include "flags.h"
+#include "error_handling.h"
 
 #define MAX_INTERRUPTS 100
 
@@ -224,7 +225,7 @@ int tk_add(char *wrd)
     enum token_type tk;
     if (wrd == NULL || !strlen(wrd)){
         fprintf(stderr, "%s:%d: warning: attempting to add empty token to token list\n", file_name, file_line_num);
-        return 0;
+        THROW_MAIN;
     }
 
     // check if char
@@ -232,11 +233,11 @@ int tk_add(char *wrd)
         int len = strlen(wrd);
         if (len > 3){
             fprintf(stderr, "%s:%d: invalid character %s\n",file_name,file_line_num,wrd);
-            return 0;
+            THROW_MAIN;
         }
         else if (wrd[len-1] != '\''){
             fprintf(stderr, "%s:%d: unmatched '\n",file_name,file_line_num);
-            return 0;
+            THROW_MAIN;
         }
         else {
             tk = Char;
