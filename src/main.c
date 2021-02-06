@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
     update_interrupts();
     build_interrupts();
     
-    tk_lst_init();
     init_ll_expr();
     init_env(NULL, NULL);
 
@@ -76,6 +75,7 @@ int main(int argc, char *argv[])
         shell();
     }
     else {
+        tk_lst_init();
         if (setjmp(main_jmp_env)) {
             fprintf(stderr, "failed to parse tokens\n");
             goto freeing_step;
@@ -129,10 +129,10 @@ int main(int argc, char *argv[])
                 printf("\n");
             }
         }
+        tk_lst_free();
     }
  freeing_step:
     free_env(NULL);
     free_all_expr();
-    tk_lst_free();
     return 0;
 }
