@@ -11,7 +11,6 @@ int is_null_expr(Expr_t e)
     return (e.e_type == Generic && e.r_type == Undef_R && e.expr.generic == NULL);
 }
 
-
 void print_expr(Expr_t expr)
 {
     printf("{%s, %s, ", e_str[expr.e_type], r_str[1 + expr.r_type]);
@@ -111,6 +110,55 @@ void print_expr(Expr_t expr)
     fflush(stdout);
     return;
 }
+
+void print_expr_ret(Expr_t expr)
+{
+    switch (expr.e_type) {
+    case List:
+    case Sequence: {
+        Cons_t *curr = expr.expr.cons;
+        printf("[");
+        while (curr != NULL) {
+            print_expr_ret(curr->head);
+            if (curr->tail != NULL) {
+                printf(", ");
+                curr = curr->tail;
+            }
+            else {
+                printf("]");
+                break;
+            }
+        }
+        break;
+    }
+    case Constant:
+        switch (expr.r_type) {
+        case Int_R:
+            printf("%lld", expr.expr.constant->i);
+            break;
+        case Float_R:
+            printf("%f", expr.expr.constant->f);
+            break;
+        case String_R:
+            printf("\"%s\"", expr.expr.constant->str);
+            break;
+        case Bool_R:
+            printf("%s", ((expr.expr.constant->i == 0) ? "False" : "True"));
+            break;
+        default:
+            printf("ERROR: UNDEF");
+            break;
+        }
+        break;
+        
+    default:
+        printf("NULL");
+        break;
+    }
+    fflush(stdout);
+    return;
+}
+
 
 // Wrappers
 Expr_t wrap_expr_u(Expr_u u) {

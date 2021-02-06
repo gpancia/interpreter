@@ -203,6 +203,11 @@ Expr_t evaluate_arith(Expr_t expr, Env *env) {
 }
 
 Expr_t evaluate_set(Expr_t expr, Env *env) {
+    void *func_ptr = special_func(expr.expr.set->name);
+    if (func_ptr != NULL) {
+        fprintf(stderr, "cannot redefine \"%s\"\n", expr.expr.set->name);
+        THROW_ERROR;
+    }
     Expr_t val = evaluate_expr(expr.expr.set->val, env);
     set_val(env, expr.expr.set->name, &val);
     return val;
@@ -212,7 +217,12 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
     // print_env();
     Var_t *var = expr.expr.var;
     char *name = var->name;
+    void *func_ptr = special_func(name);
+    if (func_ptr != NULL) {
+        return NULL_EXPR;
+    }
     Expr_t *val = get_val(env, name);
+    
     if (val == NULL) {
         fprintf(stderr, "evaluate_id: undeclared variable \"%s\"\n", name);
         THROW_ERROR;
@@ -355,7 +365,6 @@ Expr_t evaluate_list(Expr_t expr, Env *env) {
     Cons_t *curr = expr.expr.cons;
     while (curr != NULL) {
         Expr_t ret = evaluate_expr(curr->head, env);
-        // free_expr(curr->head);
         curr->head = ret;
         curr = curr->tail;
     }
@@ -396,7 +405,11 @@ Expr_t evaluate_sequence(Expr_t expr, Env *env) {
 
 Expr_t evaluate_funcdef(Expr_t expr, Env *env) {
     FuncDef_t *func_def = expr.expr.func_def;
-    
+    void *func_ptr = special_func(func_def->name);
+    if (func_ptr != NULL) {
+        fprintf(stderr, "cannot redefine \"%s\"\n", func_def->name);
+        THROW_ERROR;
+    }
     // // check if all args are valid (i.e.: empty variable names) (is this necessary? no)
     // if (!is_null_expr(expr.expr.func_def->args)) {
     //     Cons_t *curr = func_def->args.expr.cons;
@@ -417,7 +430,11 @@ Expr_t evaluate_funcdef(Expr_t expr, Env *env) {
 
 Expr_t evaluate_func(Expr_t expr, Env *env) {
     Expr_t *func_def_expr = get_val(env, expr.expr.func->name);
-    if (func_def_expr == NULL) {
+    Expr_t (*func_ptr)(Expr_t, Env *) = special_func(expr.expr.func->name);
+    if (func_ptr != NULL) {
+        return func_ptr(expr, env);
+    }
+    else if (func_def_expr == NULL) {
         fprintf(stderr, "error: function %s not defined\n", expr.expr.func->name);
         THROW_ERROR;
     }
@@ -459,6 +476,42 @@ Expr_t evaluate_func(Expr_t expr, Env *env) {
 
 
 
+Expr_t evaluate_print(Expr_t expr, Env *env) {
+    Cons_t *args = expr.expr.func->args;
+    Expr_t val;
+    uint num_args = args->size;
+    if (num_args == 0) {
+        val = NULL_EXPR;
+    }
+    else if (num_args == 1){
+        val = evaluate_expr(args->head, env);
+    }
+    else {
+        printf("(");
+        for (uint i = 0; i < num_args-1; i++) {
+            print_expr_ret(evaluate_expr(args->head, env));
+            printf(", ");
+            args = args->tail;
+        }
+        print_expr_ret(evaluate_expr(args->head, env));
+        printf(")\n");
+        return NULL_EXPR;
+    }
+    
+    print_expr_ret(val);  // only reached if num_args < 2
+    printf("\n");
+    return NULL_EXPR;
+}
+
+
+void * special_func(char *name) {
+    void *func_ptr = NULL;
+    if (!strcmp(name, "print")) {
+        func_ptr = &evaluate_print;
+    }
+
+    return func_ptr;
+}
 
 
 char constant_to_bool(Expr_t expr) {

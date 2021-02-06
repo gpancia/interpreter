@@ -31,6 +31,7 @@ extern char *b_str[];
 // expr memory size array
 extern size_t e_size[];
 
+// functions that have preset functionality and cannot be redefined (i.e.: print)
 typedef union Expr_u {
     void *ptr;
     struct Expr_t *expr; 
@@ -44,7 +45,6 @@ typedef union Expr_u {
     struct FuncDef_t *func_def; // FunctionDef
     struct Var_t *var; // Var
     struct Constant_t *constant; // Constant
-    struct Special_t *special;  // Special
 } Expr_u;
 
 typedef struct Expr_t {
@@ -131,7 +131,8 @@ typedef struct Constant_t {
 
 int is_null_expr(Expr_t);
 
-void print_expr(Expr_t);
+void print_expr(Expr_t);  // prints all expression info
+void print_expr_ret(Expr_t expr);  // prints expression's return value. Unevaluated expressions are treated as NULL.
 
 // Wrappers
 Expr_t wrap_expr_u(Expr_u);
