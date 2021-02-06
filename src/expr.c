@@ -210,7 +210,7 @@ enum result_type consolidate_constant_pair(Expr_t lr_expr[2], Constant_Values *l
         if (lr_expr[i].e_type != Constant) {
             fprintf(stderr, "unwrap_consolidate_constant_pair: invalid expressions of type %s:\n", e_str[lr_expr[i].e_type]);
             print_expr(lr_expr[i]);
-            THROW_MAIN;
+            THROW_ERROR;
         }
         if (lr_expr[0].r_type == lr_expr[1].r_type) {
             r_type = lr_expr[0].r_type;

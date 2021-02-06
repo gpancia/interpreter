@@ -36,7 +36,7 @@ Expr_t evaluate_expr(Expr_t expr, Env *env) {
     case ArgList:
         // I don't think this should ever come up here
         fprintf(stderr, "evaluator error: ArgList shouldn't be here\n");
-        THROW_MAIN;
+        THROW_ERROR;
     case Function:
         return evaluate_func(expr, env);
     case FunctionDef:
@@ -73,7 +73,7 @@ Expr_t evaluate_arith(Expr_t expr, Env *env) {
         fprintf(stderr, ", ");
         print_expr(right);
         fprintf(stderr, "\n");
-        THROW_MAIN;
+        THROW_ERROR;
     }
 
     Expr_t lr_expr[2] = {left, right};
@@ -178,7 +178,7 @@ Expr_t evaluate_arith(Expr_t expr, Env *env) {
         fprintf(stderr, "evaluate_arith: following expression of type %s should not be evaluated here\n",
                 e_str[expr.expr.arith->e_type]);
         print_expr(expr);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     
     ret = create_expr(Constant, r_type, NULL);
@@ -196,7 +196,7 @@ Expr_t evaluate_arith(Expr_t expr, Env *env) {
     default:
         fprintf(stderr, "evaluate_arith: invalid return type %s:\n", r_str[r_type]);
         print_expr(expr);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     
     return ret;
@@ -225,7 +225,7 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
     
     if (val == NULL) {
         fprintf(stderr, "evaluate_id: undeclared variable \"%s\"\n", name);
-        THROW_MAIN;
+        THROW_ERROR;
     }
 
     if (!is_null_expr(var->index)) {
@@ -237,7 +237,7 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
             else {
                 fprintf(stderr, "invalid access of %s type variable '%s'\n", e_str[val->e_type], name);
             }
-            THROW_MAIN;
+            THROW_ERROR;
         }
 
         Expr_t index_expr = evaluate_expr(var->index, env);
@@ -245,7 +245,7 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
         // index must be int constant
         if (index_expr.e_type != Constant || index_expr.r_type != Int_R) {
             fprintf(stderr, "invalid index type %s/%s for variable %s\n", e_str[index_expr.e_type], r_str[index_expr.r_type], name);
-            THROW_MAIN;
+            THROW_ERROR;
         }
 
         int index_signed = index_expr.expr.constant->i;
@@ -257,7 +257,7 @@ Expr_t evaluate_id(Expr_t expr, Env *env) {
         uint index = *(uint *) &index_signed;
         if (size < index) {
             fprintf(stderr, "index too large for variable '%s' of len %u\n", name, size);
-            THROW_MAIN;
+            THROW_ERROR;
         }
 
         if (val->e_type == List) {
@@ -280,7 +280,7 @@ Expr_t evaluate_bexpr(Expr_t expr, Env *env) {
     if (expr.e_type != BExpr) {
         fprintf(stderr, "evaluate_bexpr: invalid expression of type %s:\n", e_str[expr.e_type]);
         print_expr(expr);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     // Constant_t *ret_c = (Constant_t*) malloc(sizeof(Constant_t));
     // *ret_c = (Constant_t) {Constant, Bool_R, {.b=0}};
@@ -419,7 +419,7 @@ Expr_t evaluate_funcdef(Expr_t expr, Env *env) {
     //             fprintf(stderr,
     //                     "evaluator error: argument %s of function %s is already defined as a variable elsewhere\n",
     //                     curr->head.expr.var->name, func_def->name);
-    //             THROW_MAIN;
+    //             THROW_ERROR;
     //         }
     //     }
     // }
@@ -436,7 +436,7 @@ Expr_t evaluate_func(Expr_t expr, Env *env) {
     }
     else if (func_def_expr == NULL) {
         fprintf(stderr, "error: function %s not defined\n", expr.expr.func->name);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     
     FuncDef_t *func_def = func_def_expr->expr.func_def;
@@ -448,7 +448,7 @@ Expr_t evaluate_func(Expr_t expr, Env *env) {
     if (arg_names->size != arg_vals->size) {
         fprintf(stderr, "error:%s: passed %u arguments, expected %u\n",
                 func->name, arg_vals->size, arg_names->size);
-        THROW_MAIN;
+        THROW_ERROR;
     }
 
     // create local environment with arguments
@@ -518,7 +518,7 @@ char constant_to_bool(Expr_t expr) {
     if (expr.e_type != Constant) {
         fprintf(stderr, "constant_to_bool: invalid expression of type %s:\n", e_str[expr.e_type]);
         print_expr(expr);
-        THROW_MAIN;
+        THROW_ERROR;
     }
     void *val = (void *) expr.expr.constant->i;
     switch (expr.expr.constant->r_type) {
@@ -532,7 +532,7 @@ char constant_to_bool(Expr_t expr) {
     default:
         fprintf(stderr, "evaluate_arith: invalid return type %s:\n", r_str[expr.expr.constant->r_type]);
         print_expr(expr);
-        THROW_MAIN;
+        THROW_ERROR;
     }
 }
 

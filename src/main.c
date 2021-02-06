@@ -46,7 +46,7 @@ size_t e_size[] = {sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t), sizeof(Ari
 
 char FLAGS = 0;
 
-jmp_buf main_jmp_env;
+jmp_buf jmp_env;
 
 int main(int argc, char *argv[])
 {
@@ -76,8 +76,7 @@ int main(int argc, char *argv[])
         shell();
     }
     else {
-        tk_lst_init();
-        if (setjmp(main_jmp_env)) {
+        if (setjmp(jmp_env)) {
             fprintf(stderr, "failed to parse tokens\n");
             goto freeing_step;
         }
@@ -101,7 +100,7 @@ int main(int argc, char *argv[])
         Expr_t expr_arr[200];
         Token *token;
         while (tk_lst.head.next != NULL) {
-            if (setjmp(main_jmp_env)) {
+            if (setjmp(jmp_env)) {
                 fprintf(stderr, "failed to parse expression\n");
             }
             else {
@@ -118,7 +117,7 @@ int main(int argc, char *argv[])
         if (EVAL_EXPRS) {
             Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
             // print_expr(main_seq);
-            if (setjmp(main_jmp_env)) {
+            if (setjmp(jmp_env)) {
                 fprintf(stderr, "failed to evaluate expression\n");
                 goto freeing_step;
             }

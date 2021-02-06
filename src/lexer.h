@@ -24,7 +24,7 @@ typedef struct Token{
     char *val;
     struct Token *next;
     struct Token *prev;
-    int line_num; // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
+    int line_num;  // for debugging, if this isn't stored here you can't reference line number when parsing/evaluating
 } Token;
 
 // output token list, easily manipulatable for parsing but can lose pointers leading to leaks if by itself
@@ -53,14 +53,14 @@ typedef struct {
 
 extern InterruptList interrupt_list;
 
-void tk_lst_init(); // initializes global vars tk_lst and full_tk_lst
-void tk_lst_free(); // frees all malloc'd fields in full_tk_lst
-void tk_free(Token*); // frees a malloc'd token and its string, if any
-int tk_add(char *wrd); // adds a token to tk_lst with the appropriate type enum and its pointer to full_tk_lst
+void tk_lst_init();  // initializes global vars tk_lst and full_tk_lst
+void tk_lst_free();  // frees all malloc'd fields in full_tk_lst; tk_lst is ready to use again immediately
+void tk_free(Token*);  // frees a malloc'd token and its string, if any
+int tk_add(char *wrd);  // adds a token to tk_lst with the appropriate type enum and its pointer to full_tk_lst
 int lex_string(char *str);  // passes a string stream to lex
 int lex_file(char *file_path);  // passes a file stream to lex
 int lex(void *stream);  // reads a stream and turns it into a list of tokens using tk_add()
-void build_interrupts(); // reads a file with characters that interrupt token names, enabling separation of, for example, a*b into tokens 'a', '*' and 'b'.
+void build_interrupts();  // reads a file with characters that interrupt token names, enabling separation of, for example, a*b into tokens 'a', '*' and 'b'.
 // if file does not exist, calls lexer_utils and builds it.
 
 int is_interrupt(char c);
@@ -71,7 +71,7 @@ typedef struct tk_match_t{
     // whether or not the token's value is needed
     // (i.e.: storing '\n' is pointless malloc'ing and free'ing)
     char has_val;
-    int num_patterns; // necessary for looping through pattern array properly
+    int num_patterns;  // necessary for looping through pattern array properly
 } tk_match_t;
 
 extern tk_match_t tk_match[];
