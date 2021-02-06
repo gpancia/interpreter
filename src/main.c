@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "env.h"
 #include "evaluator.h"
+#include "error_handling.h"
 
 #ifndef true
 #define true 1
@@ -42,25 +43,38 @@ size_t e_size[] = {sizeof(Arith_t), sizeof(Arith_t), sizeof(Arith_t), sizeof(Ari
 
 char FLAGS = 0;
 
+jmp_buf main_jmp_env;
+
 int main(int argc, char *argv[])
 {
     FLAGS = parse_flags(argc, argv);
 
     update_interrupts();
-
     init_ll_expr();
-    
-    print_all_tokens2(argc, argv);
+    init_env(NULL, NULL);
+
+    if (setjmp(main_jmp_env)) {
+        fprintf(stderr, "failed to parse tokens\n");
+        goto freeing_step;
+    }
+    else {
+        print_all_tokens2(argc, argv);
+    }
 
     int num_expr = 0;
     Expr_t expr_arr[200];
     Token *token;
     while (tk_lst.head.next != NULL) {
-        token = NULL;  // forces parse_expr to pop a new line off tk_lst
-        expr_arr[num_expr] = parse_expr(&token);
-        if (is_null_expr(expr_arr[num_expr])) { break; }
-        print_expr(expr_arr[num_expr++]);
-        printf("\n");
+        if (setjmp(main_jmp_env)) {
+            fprintf(stderr, "failed to parse expression\n");
+        }
+        else {
+            token = NULL;  // forces parse_expr to pop a new line off tk_lst
+            expr_arr[num_expr] = parse_expr(&token);
+            if (is_null_expr(expr_arr[num_expr])) { break; }
+            print_expr(expr_arr[num_expr++]);
+            printf("\n");
+        }
     }
     printf("\n --------------DONE PARSING-------------\n");
 
@@ -68,19 +82,21 @@ int main(int argc, char *argv[])
     if (EVAL_EXPRS) {
         Expr_t main_seq = expr_array_to_sequence(expr_arr, num_expr);
         // print_expr(main_seq);
-        Expr_t ret_main = evaluate_expr(main_seq, NULL);
-        print_expr(ret_main);
-        printf("\n");
-        // init_env(NULL, NULL);
-        // for (int i = 0; i < num_expr; i++) {
-        // print_expr(evaluate_expr(expr_arr[i]));
-        // printf("\n");
-        // }
-        print_env(NULL);
-        printf("\n");
-        free_env(NULL);
-        free_all_expr();
-        tk_lst_free();
+        if (setjmp(main_jmp_env)) {
+            fprintf(stderr, "failed to evaluate expression\n");
+            goto freeing_step;
+        }
+        else {
+            Expr_t ret_main = evaluate_expr(main_seq, NULL);
+            print_expr(ret_main);
+            printf("\n");
+            print_env(NULL);
+            printf("\n");
+        }
     }
+ freeing_step:
+    free_env(NULL);
+    free_all_expr();
+    tk_lst_free();
     return 0;
 }
