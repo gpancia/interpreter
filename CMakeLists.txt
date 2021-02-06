@@ -53,6 +53,7 @@ set(FILE_NAMES
     lexer_utils
     parser
     tk_line
+    shell
 )
 
 list(TRANSFORM FILE_NAMES PREPEND "${SOURCE_DIR}/")
