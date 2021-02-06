@@ -26,7 +26,7 @@ tk_match_t tk_match[] = {{Newline, 0, 1},{OParens, 0, 1},{CParens, 0, 1},
                          {OBrace, 0, 1},{CBrace, 0, 1},
                          {OBracket, 0, 1}, {CBracket, 0, 1}, {Comma, 0, 1},
                          {Oper, 1, 14},
-                         {Str, 1, 1}, {Bool, 1, 2}, {Cond, 0, 1}
+                         {Str, 1, 1}, {Bool, 1, 2}, {Cond, 0, 1},
 };
 char *tk_pattern[][14] = {{"\n"},{"("},{")"},
                           {"{"},{"}"},
@@ -260,7 +260,7 @@ int tk_add(char *wrd)
             goto assign;
         }
     }
-
+    
     // check if string
     if (*wrd == '"'){
         tk = Str;

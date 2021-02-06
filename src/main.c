@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
     update_interrupts();
     build_interrupts();
     
+    tk_lst_init();
     init_ll_expr();
     init_env(NULL, NULL);
 
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
         tk_lst_free();
     }
  freeing_step:
+    free(interrupt_list.interrupt);
     free_env(NULL);
     free_all_expr();
     return 0;

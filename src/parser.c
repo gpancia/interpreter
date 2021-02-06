@@ -30,6 +30,7 @@ Expr_t parse_expr(Token **token_ptr)
     Token *cond_tf[2] = {NULL, NULL};
     enum ordering {divmul, addsub, bexpr, set, null=-1}; // ordering is lowest to highest in AST, e.g.: + is higher than *
     enum ordering highest_op = null;
+    
     while (token != NULL){
         if (token->tk < 5 || token->tk == Id) { // skip constants and binds for now
             NXT_TK;
